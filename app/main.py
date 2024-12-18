@@ -11,7 +11,7 @@ async def start_scraping_task():
     while True:
 	# 启动爬虫定时任务，确保它们不会阻塞主事件循环
         print("Starting scraping task...")
-    	asyncio.create_task(periodic_scraping_task())
+        asyncio.create_task(periodic_scraping_task())
 
 @app.get("/")
 async def read_root():
