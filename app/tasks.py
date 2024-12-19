@@ -391,7 +391,7 @@ async def getPaperList(url):
             papers.append(number)
 
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
-    return papers.reverse()
+    return papers
 async def scrape(paperId):
     interview_collection=await get_interview_collection()
     questionUrl, explanUrl = await getUrls(paperId)
