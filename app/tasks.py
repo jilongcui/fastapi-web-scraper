@@ -82,7 +82,7 @@ async def image2Code(imageUrl):
 imageUrl = "your_image_url_here"
 
 
-async def getUrls(paperId:str, referer: str) -> dict:
+async def getUrls(paperId:str) -> dict:
     # 抓取svgStr
     url = "https://www.gkzenti.cn/captcha/math"
     timestamp = int(time.time())
@@ -366,7 +366,7 @@ async def process_mianshi(paperId, question, explanation):
         interviews.append(merged_entry)
     return interviews
 
-async def fetch_html(url, referer):
+async def fetch_html(url, referer: str | None):
     timestamp = int(time.time())
     headers = {
         "Accept-Encoding": "gzip, deflate, br",
