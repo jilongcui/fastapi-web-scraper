@@ -391,7 +391,7 @@ async def getPaperList(url):
             papers.append(number)
 
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
-    return papers
+    return reversed(papers)
 async def scrape(paperId):
     interview_collection=await get_interview_collection()
     questionUrl, explanUrl = await getUrls(paperId)
@@ -419,7 +419,7 @@ def save_paper_id(url, paper_id):
 
     fileName = os.path.join("papers", path + ".txt")
     try:
-        os.makedirs(path, parents=True, exist_ok=True)
+        os.makedirs(path, exist_ok=True)
         # logger.info(f"Directory '{path}' is created or already exists.")
     except Exception as e:
         logger.info(f"An error occurred while creating the directory: {e}")
@@ -442,7 +442,7 @@ def generate_pageurls(n):
     base_url = "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%9B%BD%E8%80%83&index="
     
     # 使用列表推导式生成URL列表
-    urls = [f"{base_url}{i}" for i in range(1, n + 1)]
+    urls = [f"{base_url}{i}" for i in reversed(range(1, n + 1))]
     
     return urls
 
