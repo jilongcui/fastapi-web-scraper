@@ -86,7 +86,7 @@ async def getUrls(paperId:str) -> dict:
     url = "https://www.gkzenti.cn/captcha/math"
     headers = {
         'Accept': "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        'Cookie': "Hm_lvt_db5c56a1da081947699f2e5bece459c7=1733669135; connect.sid=s%3AbcN_EF1Gj31QqEsKDM4YSwKlWQCknmZo.hn4pORqPpYPaVMREJ677oaYk317aZ2QgA2%2B88Hlk2kQ; cls=%E8%A1%8C%E6%B5%8B; province=%E5%9B%BD%E8%80%83; HMACCOUNT=2CF09B05167D4A59; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734055038",
+        'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     svgStr = await fetch_captcha_svg(url, headers)
@@ -366,7 +366,7 @@ async def fetch_html(url, referer=""):
     headers = {
         "Accept-Encoding": "gzip, deflate, br",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Cookie": "Hm_lvt_db5c56a1da081947699f2e5bece459c7=1733669135; connect.sid=s%3AbcN_EF1Gj31QqEsKDM4YSwKlWQCknmZo.hn4pORqPpYPaVMREJ677oaYk317aZ2QgA2%2B88Hlk2kQ; cls=%E8%A1%8C%E6%B5%8B; province=%E5%9B%BD%E8%80%83; HMACCOUNT=2CF09B05167D4A59; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734055038",
+        "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     if referer:
