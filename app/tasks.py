@@ -139,8 +139,8 @@ async def replace_image_urls(markdown_text, authToken=""):
     # matches = [
     #     markdown_text
     # ]
-    logger.info(matches)
-    logger.info(f"Found {len(matches)} image URLs:")
+    # logger.info(matches)
+    # logger.info(f"Found {len(matches)} image URLs:")
     new_markdown = markdown_text
     
     for url in matches:
@@ -149,7 +149,7 @@ async def replace_image_urls(markdown_text, authToken=""):
         if(url.count('(')>url.count(')')):
             url = url + ')'
         imageUrl = "https:"+url
-        logger.info(f"imageUrl: {imageUrl}")
+        # logger.info(f"imageUrl: {imageUrl}")
         async with aiohttp.ClientSession() as session:
             async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
                 data = {}
@@ -163,7 +163,7 @@ async def replace_image_urls(markdown_text, authToken=""):
                         new_url = data.get("location")
                         # 用新 URL 替换旧 URL
                         new_markdown = new_markdown.replace(url, new_url)
-                        logger.info(f"new_markdown: {new_markdown}")
+                        # logger.info(f"new_markdown: {new_markdown}")
                         return new_markdown
                     else:
                         logger.info(f"Request failed with status code: {data}")
@@ -214,8 +214,8 @@ async def process_mianshi(paperId, question, explanation):
                     'department': department,
                     'title': question_title,
                     'origin': title,
-                    'introduction': introduction,
-                    'material': material,
+                    'introduction': await replace_image_urls(introduction),
+                    'material': await replace_image_urls(material),
                     'text': re.sub(r"^第\d+题：", "", question_text)
                 })
         elif len(soup.find_all('h3')) == 1:
@@ -248,8 +248,8 @@ async def process_mianshi(paperId, question, explanation):
                     'department': department,
                     'title': question_title,
                     'origin': title,
-                    'introduction': introduction,
-                    'material': material,
+                    'introduction': await replace_image_urls(introduction),
+                    'material': await replace_image_urls(material),
                     'text': re.sub(r"^第\d+题：", "", question_text)
                 })
         
@@ -465,6 +465,4 @@ async def periodic_scraping_task():
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 
                 await asyncio.sleep(3)  # 每秒钟运行一次任务
-                break
-        break
 
