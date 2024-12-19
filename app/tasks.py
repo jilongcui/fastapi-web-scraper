@@ -388,7 +388,7 @@ async def getPaperList(url):
         if link['href'].startswith('/paper/'):
             # 提取所有以/paper/开头的链接中的数字部分
             number = link['href'].split('/')[-1]
-            papers.insert(number)
+            papers.append(number)
 
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
     return papers.reverse()
