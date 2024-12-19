@@ -28,6 +28,10 @@ log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%
 stream_handler.setFormatter(log_formatter)
 logger.addHandler(stream_handler)
 
+file_handler = logging.FileHandler('app.log')
+file_handler.setFormatter(log_formatter)
+logger.addHandler(file_handler)
+
 logging.getLogger(__name__).info('API is starting up')
 
 # 可选：封装获取 logger 的功能

@@ -24,6 +24,10 @@ log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%
 stream_handler.setFormatter(log_formatter)
 logger.addHandler(stream_handler)
 
+file_handler = logging.FileHandler('app.log')
+file_handler.setFormatter(log_formatter)
+logger.addHandler(file_handler)
+
 async def fetch_captcha_svg(url, headers):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
@@ -464,5 +468,5 @@ async def periodic_scraping_task():
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 
-                await asyncio.sleep(3)  # 每秒钟运行一次任务
+                await asyncio.sleep(5)  # 每秒钟运行一次任务
 
