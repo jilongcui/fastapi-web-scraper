@@ -332,7 +332,7 @@ async def process_mianshi(paperId, question, explanation):
                     if tag == next_b_tag:
                         logger.info("----- stop ----- ")
                         break  # 遇到了下一个问题标题，停止
-                    if tag.name == 'p' and tag.get_text(strip=True) == "&nbsp":
+                    if tag.name == 'p' and tag.get_text(strip=True).startswith("&nbsp"):
                         logger.info("----- stop2 ----- ")
                         break  # 遇到了下一个问题标题，停止
 
