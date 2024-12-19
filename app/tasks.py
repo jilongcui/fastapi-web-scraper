@@ -366,7 +366,7 @@ async def process_mianshi(paperId, question, explanation):
         interviews.append(merged_entry)
     return interviews
 
-async def fetch_html(url, referer: str | None):
+async def fetch_html(url, referer: str = None):
     timestamp = int(time.time())
     headers = {
         "Accept-Encoding": "gzip, deflate, br",
