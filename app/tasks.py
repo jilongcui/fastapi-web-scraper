@@ -120,6 +120,7 @@ def getTitleInfo(title):
     pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)面试'
 
     # 解析每个主题
+    title = title.strip().replace("上午", "").replace("下午", "")
     match = re.search(pattern, title)
     if match:
         year = match.group('year')
@@ -202,6 +203,8 @@ async def process_mianshi(paperId, question, explanation):
             material_points = []
             for tag in material_points_tags:
                 if tag.name == 'b' :
+                    break
+                if tag.get_text(strip=True).startswith(f"第1题"):
                     break
                 text_content = tag.get_text(strip=True)
                 material_points.append(text_content)
@@ -477,5 +480,5 @@ async def periodic_scraping_task():
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 rand = random.randint(1, 20)
-                await asyncio.sleep(50)  # 每秒钟运行一次任务
+                await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
 
