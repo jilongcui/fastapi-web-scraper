@@ -1,18 +1,66 @@
 from fastapi import FastAPI
 import asyncio
-import aiohttp
-from bs4 import BeautifulSoup
-from tasks import periodic_scraping_task  # 导入你定义的爬虫任务
+import uvicorn
+import signal
+from contextlib import asynccontextmanager
+from app.tasks import periodic_scraping_task  # 导入你定义的爬虫任务
+from app.logs import get_logger
 
-app = FastAPI()
 
-@app.on_event("startup")
+logger = get_logger(__name__)
+
+# 定义全局变量以控制停止信号（如果需要）
+shutdown_event = asyncio.Event()
+
+# Define a global event for managing shutdown signals.
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    
+
+    # 这部分将在应用启动时运行（等同于 startup）
+    # logger.info("Starting up...")
+    print("Starting up...")
+    
+    # 启动爬虫定时任务在后台协程中运行
+    scraping_task = asyncio.create_task(start_scraping_task())
+
+    try:
+        yield
+    finally:
+        # 这部分将在应用关闭时运行（等同于 shutdown）
+        logger.info("Shutting down...")
+        
+        # 设置停止信号并等待异步任务完成清理工作
+        shutdown_event.set()
+        await scraping_task
+
 async def start_scraping_task():
-    while True:
-	# 启动爬虫定时任务，确保它们不会阻塞主事件循环
-        print("Starting scraping task...")
-        asyncio.create_task(periodic_scraping_task())
+    while not shutdown_event.is_set():
+        logger.info("Starting scraping task...")
+
+        # 假设此函数是你实际执行的抓取任务
+        await periodic_scraping_task()  
+
+        # 每分钟运行一次任务
+        await asyncio.sleep(5)
+    # 在退出主循环之前进行一些清理
+    logger.info("Scraping task is shutting down.")
+
+
+# 将 lifespan 函数连接到 FastAPI 应用上
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def read_root():
     return {"status": "Running web scraper service"}
+
+# 注册信号以处理程序终止请求
+# loop = asyncio.get_event_loop()
+# loop.add_signal_handler(signal.SIGINT, shutdown_event.set)
+# # 可选：也可以注册其他信号，如SIGTERM
+# loop.add_signal_handler(signal.SIGTERM, shutdown_event.set)
+
+if __name__ == "__main__":
+    print("Running app...")
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

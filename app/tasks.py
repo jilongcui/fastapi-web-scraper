@@ -2,23 +2,37 @@
 
 import aiohttp
 import asyncio
-# import requests
 import json
+import os
 import base64
+import logging
+import sys
 from bs4 import BeautifulSoup
+from urllib.parse import unquote
+from app.logs import get_logger
 from fastapi import FastAPI, HTTPException, Depends
-from .models import Word, Base
-from .database import engine, SessionLocal, get_db
+from models.user import User  # 从models导入用户模型
+from app.database import get_interview_collection  # 从app导入数据库函数
+
+# 获取一个特定的 logger 实例
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# StreamHandler für die Konsole
+stream_handler = logging.StreamHandler(sys.stdout)
+log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%(threadName)s: %(thread)d] [%(levelname)s] %(name)s: %(message)s")
+stream_handler.setFormatter(log_formatter)
+logger.addHandler(stream_handler)
 
 async def fetch_captcha_svg(url, headers):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
             if response.status == 200:
                 svg_data = await response.text()
-                print(f"Fetched SVG: {svg_data[:100]}...")  # 打印前100个字符以示例
+                # logger.info(f"Fetched SVG: {svg_data}")  # 打印前100个字符以示例
                 return svg_data
             else:
-                print(f"Failed to fetch SVG, status code: {response.status}")
+                logger.info(f"Failed to fetch SVG, status code: {response.status}")
                 return None
             
 # def image2Code2(imageUrl):
@@ -39,7 +53,7 @@ async def fetch_captcha_svg(url, headers):
 #     return data
 
 async def image2Code(imageUrl):
-    api_endpoint = "https://mianshi.xiaohe.biz/api/interview-set/svg2Answer"
+    api_endpoint = "https://mian.xiaohe.biz/api/interview-set/svg2Answer"
     headers = {
         # 'Authentication': f'{authToken}',  # 确保替换为你的真实认证令牌
         'Content-Type': 'application/json'
@@ -50,13 +64,13 @@ async def image2Code(imageUrl):
             data = {}
             if response.status in (200, 201):
                 # 如果返回状态码是200或201，处理响应内容
-                print("Request successful")
+                logger.info("Request successful")
                 data = await response.json()  # 假设服务器返回JSON格式数据
                 code = data.get("code", {})
                 if code == 200:
                     data = data.get("data", {})
                 else:
-                    print(f"Request failed with status code: {response.status}")
+                    logger.info(f"Request failed with status code: {response.status}")
             return data
 # 定义API端点和图像URL
 
@@ -67,7 +81,9 @@ async def getUrls(paperId:str) -> dict:
     # 抓取svgStr
     url = "https://www.gkzenti.cn/captcha/math"
     headers = {
-        'Cookie': "Hm_lvt_db5c56a1da081947699f2e5bece459c7=1733669135; connect.sid=s%3AbcN_EF1Gj31QqEsKDM4YSwKlWQCknmZo.hn4pORqPpYPaVMREJ677oaYk317aZ2QgA2%2B88Hlk2kQ; cls=%E8%A1%8C%E6%B5%8B; province=%E5%9B%BD%E8%80%83; HMACCOUNT=2CF09B05167D4A59; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734055038","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
+        'Accept': "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        'Cookie': "Hm_lvt_db5c56a1da081947699f2e5bece459c7=1733669135; connect.sid=s%3AbcN_EF1Gj31QqEsKDM4YSwKlWQCknmZo.hn4pORqPpYPaVMREJ677oaYk317aZ2QgA2%2B88Hlk2kQ; cls=%E8%A1%8C%E6%B5%8B; province=%E5%9B%BD%E8%80%83; HMACCOUNT=2CF09B05167D4A59; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734055038",
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     svgStr = await fetch_captcha_svg(url, headers)
     # 将转义字符移除
@@ -80,22 +96,80 @@ async def getUrls(paperId:str) -> dict:
     base64_encoded_svg = base64.b64encode(svg_bytes).decode('utf-8')
 
     # 创建Data URI格式
-    data_uri = f'data:image/svg+xml;base64,{base64_encoded_svg}'
+    data_uri = f'data:image/svg+xml;charset=utf-8;base64,{base64_encoded_svg}'
     
     # 假设image2Answer是在其他地方定义的函数，用于处理encoded data和authentication token。
-    data = image2Code(data_uri)
+    data = await image2Code(data_uri)
     code = data.get("answer")
-    paperUrl = f"https://www.gkzenti.cn/paper/{paperId}"
+    code = int(code)
+    questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     explanUrl = f"https://www.gkzenti.cn/explain/{paperId}?mathcode={code}"
-    return {
-        # "data_uri": data_uri,
-        "content": data.get("content"),
-        "code": code,
-        "paperUrl" : paperUrl,
-        "explanUrl" : explanUrl,
-    }
+    return questionUrl, explanUrl
 
-async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_db)):
+import re
+def getTitleInfo(title):
+    # 定义正则表达式模式，忽略月份
+    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)面试'
+
+    # 解析每个主题
+    match = re.search(pattern, title)
+    if match:
+        year = match.group('year')
+        department = match.group('department')
+        
+        logger.info(f"主题: {title}")
+        logger.info(f"  年份: {year}")
+        logger.info(f"  单位 (Department): {department}\n")
+        return year, department
+    return None, None
+
+async def replace_image_urls(markdown_text, authToken=""):
+    # 定义正则表达式来匹配 !img[](url)
+    # pattern = r'!\[\]\(([^)]+)\)'
+    # pattern = r"//upload\.gkzenti\.cn/[\w\d]+/[\w\d]+\.(png|jpg)"
+    pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(?:png|jpg)"
+    # pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(png|jpg)"
+    api_endpoint ="https://mian.xiaohe.biz/api/common/uploadByUrl"
+    headers = {
+        # 'Authorization': f'Bearer {authToken}',
+        'Content-Type': 'application/json'
+    }
+    # 查找所有匹配项
+    matches = re.findall(pattern, markdown_text)
+    # matches = [
+    #     markdown_text
+    # ]
+    logger.info(matches)
+    logger.info(f"Found {len(matches)} image URLs:")
+    new_markdown = markdown_text
+    
+    for url in matches:
+        # new_markdown += url
+        # 调用 POST 接口获取新 image URL
+        if(url.count('(')>url.count(')')):
+            url = url + ')'
+        imageUrl = "https:"+url
+        logger.info(f"imageUrl: {imageUrl}")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
+                data = {}
+                if response.status in (200, 201):
+                    # 如果返回状态码是200或201，处理响应内容
+                    data = await response.json()  # 假设服务器返回JSON格式数据
+                    code = data.get("code", {})
+                    # logger.info(f"Request response {data}")
+                    if code == 200:
+                        data = data.get("data", {})
+                        new_url = data.get("location")
+                        # 用新 URL 替换旧 URL
+                        new_markdown = new_markdown.replace(url, new_url)
+                        logger.info(f"new_markdown: {new_markdown}")
+                        return new_markdown
+                    else:
+                        logger.info(f"Request failed with status code: {data}")
+                
+    return new_markdown
+async def process_mianshi(paperId, question, explanation):
 
     # 解析题目
     try:
@@ -104,30 +178,83 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
 
         # 获取试卷名称
         title = soup.find('h3', align='center').string
-        print(f"试卷名称: {title}")
-
-        # 获取说明
-        introduction = soup.find_all('h3')[1].find_next_sibling(text=True).strip()
-        print(f"说明: {introduction}")
-
-        # 获取说明
-        material = soup.find_all('h3')[2].find_next().get_text().strip()
-        print(f"材料: {material}")
-
+        logger.info(f"试卷名称: {title}")
+        year, department = getTitleInfo(title)
+        logger.info(f"试卷名称: {title}")
         questions = []
-        # 获取各个试题
-        question_tags = soup.find_all('b')
-        for i, question in enumerate(question_tags, start=1):
-            question_text = question.find_next_sibling('p').get_text().strip()
-            # print(f"第{i}题: {question_text}")
-            question_title = f"{title} 第{index}题"
-            questions.append({
-                'title': question_title,
-                'origin': title,
-                'introduction': introduction,
-                'material': material,
-                'text': question_text
-            })
+
+        if len(soup.find_all('h3')) == 3:
+            index = 1
+            # 获取说明
+            introduction = soup.find_all('h3')[1].find_next_sibling(text=True).strip()
+            logger.info(f"说明: {introduction}")
+            # 获取材料
+            material = soup.find_all('h3')[2].find_next().get_text().strip()
+            material_points_tags = soup.find_all('h3')[2].find_next_siblings(['p','b'])
+            material_points = []
+            for tag in material_points_tags:
+                if tag.name == 'b' :
+                    break
+                text_content = tag.get_text(strip=True)
+                material_points.append(text_content)
+            material = '\n'.join(material_points)
+            logger.info(f"材料: {material}")
+
+            # 获取各个试题
+            question_tags = soup.find_all('b')
+            for index, question in enumerate(question_tags, start=1):
+                question_text = question.find_next_sibling('p').get_text().strip()
+                # logger.info(f"第{i}题: {question_text}")
+                question_title = f"{title} 第{index}题"
+                questions.append({
+                    'comment': paperId,
+                    'year': year,
+                    'province': '国家',
+                    'departmentId': '1',
+                    'department': department,
+                    'title': question_title,
+                    'origin': title,
+                    'introduction': introduction,
+                    'material': material,
+                    'text': re.sub(r"^第\d+题：", "", question_text)
+                })
+        elif len(soup.find_all('h3')) == 1:
+            # 获取说明
+            introduction = soup.find_all('h2')[0].find_next_sibling(text=True).strip()
+            logger.info(f"说明: {introduction}")
+            # 提取审题部分紧接着的p标签内容，根据需求调整选择器
+            introduction_points_tags = soup.find_all('h2')[0].find_next_siblings(['p','h2'])
+
+            introduction_points = []
+            for tag in introduction_points_tags:
+                if tag.name == 'h2' :
+                    break
+                text_content = tag.get_text(strip=True)
+                introduction_points.append(text_content)
+            material = '\n'.join(introduction_points)
+            # # 获取说明
+            # material = soup.find_all('h2')[1].find_next().get_text().strip()
+            # logger.info(f"材料: {material}")
+            question_tags = soup.find_all('h2')[1].find_next_siblings(['p'])
+            for index, question in enumerate(question_tags, start=1):
+                question_text = question.get_text().strip()
+                logger.info(f"{question_text}")
+                question_title = f"{title} 第{index}题"
+                questions.append({
+                    'comment': paperId,
+                    'year': year,
+                    'province': '国家',
+                    'departmentId': '1',
+                    'department': department,
+                    'title': question_title,
+                    'origin': title,
+                    'introduction': introduction,
+                    'material': material,
+                    'text': re.sub(r"^第\d+题：", "", question_text)
+                })
+        
+
+        
     except Exception as e:
             # Rollback on error to maintain consistency and log details for debugging
             # db.rollback()
@@ -136,8 +263,9 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
     # 解析答案解析
     analysis_points = []    
     try:
-        print("解析答案解析")
-        # print(f"{paper.explanation}")
+        logger.info("解析答案解析")
+        
+        # logger.info(f"{explanation}")
         # 从HTML文本创建一个BeautifulSoup对象，使用lxml作为解析器
         soup = BeautifulSoup(explanation, 'html.parser')
 
@@ -145,7 +273,7 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
         exam_title_tag = soup.find('h3', align='center')
         exam_title = exam_title_tag.get_text(strip=True) if exam_title_tag else "无标题"
 
-        print(f"试卷名称: {exam_title}")
+        logger.info(f"试卷名称: {exam_title}")
 
         # 初始化列表来存储题目信息
         explanations = []
@@ -161,6 +289,7 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
             analysis_points = []
             for tag in analysis_points_tags:
                 text_content = tag.get_text(strip=True)
+                # logger.info(f"text_content")
                 if text_content.startswith("思维导图") or any(x in text_content for x in ["参考答案"]) :
                     break
                 else:
@@ -173,7 +302,8 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
             if mind_map_tag:
                 img_tag = mind_map_tag.find_next('img')
                 mind_map_image_url = img_tag['src'] if img_tag else ""
-
+                mind_map_image_url = await replace_image_urls(mind_map_image_url)
+                logger.info(mind_map_image_url)
             # 提取参考答案，在<b> 参考答案 </b>或类似标记后采集相关内容。
             reference_answer_starting_point = question_block.find_next('b', string="参考答案")
             # reference_answer_starters = question_block.find_all('b', string="参考答案")
@@ -183,21 +313,21 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
                 # ref_answer_tags = reference_answer_starting_point.find_all_next(string=lambda t: t.name == 'p')
                 # 在每个<b>标签后找到下一个同级标题或换行分隔
                 next_b_tag = reference_answer_starting_point.find_next('b', string=lambda text: text and "题解析与参考答案" in text)
-                # print(next_b_tag)
-                # print("--------")
+                logger.info(next_b_tag)
+                # logger.info("--------")
                 ref_answer_tags = reference_answer_starting_point.find_all_next(['p', 'b'])
                 ref_ans_txt = ""
                 for tag in ref_answer_tags:
                     if tag == next_b_tag:
-                        print("----- stop ----- ")
+                        logger.info("----- stop ----- ")
                         break  # 遇到了下一个问题标题，停止
                     if tag.name == 'p' and tag.get_text(strip=True) == "&nbsp":
-                        print("----- stop ----- ")
+                        logger.info("----- stop2 ----- ")
                         break  # 遇到了下一个问题标题，停止
 
                     if tag.name == 'p' and tag.parent.name != "blockquote":
                         ref_ans_txt=tag.get_text(strip=True)
-                        # print(ref_ans_txt)
+                        # logger.info(ref_ans_txt)
                         reference_answers.append(ref_ans_txt)
                     #if not tag.find_previous('b', string=lambda x: x and "第" in x and "题解析与参考答案" in x):
                     #    reference_answers.append(tag.get_text(strip=True))
@@ -228,9 +358,17 @@ async def process_mianshi(question, explanation, db: SessionLocal = Depends(get_
         interviews.append(merged_entry)
     return interviews
 
-async def fetch_html(url):
+async def fetch_html(url, referer=""):
+    headers = {
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Cookie": "Hm_lvt_db5c56a1da081947699f2e5bece459c7=1733669135; connect.sid=s%3AbcN_EF1Gj31QqEsKDM4YSwKlWQCknmZo.hn4pORqPpYPaVMREJ677oaYk317aZ2QgA2%2B88Hlk2kQ; cls=%E8%A1%8C%E6%B5%8B; province=%E5%9B%BD%E8%80%83; HMACCOUNT=2CF09B05167D4A59; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734055038",
+        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
+    }
+    if referer:
+        headers['Referer'] = referer
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
+        async with session.get(url, headers=headers) as response:
             return await response.text()
 
 async def getPaperList(url):
@@ -252,17 +390,81 @@ async def getPaperList(url):
             number = link['href'].split('/')[-1]
             papers.append(number)
 
-    print(papers)  # 输出结果 ['1727924080287', '1727924080186']
+    logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
     return papers
 async def scrape(paperId):
+    interview_collection=await get_interview_collection()
     questionUrl, explanUrl = await getUrls(paperId)
+    logger.info(f"{questionUrl}, {explanUrl}")
+    if(questionUrl == None or explanUrl == None):
+        raise Exception("Failed to fetch paper urls")
     question_content = await fetch_html(questionUrl)
-    explan_content = await fetch_html(explanUrl)
-    process_mianshi(question_content, explan_content)
+    explan_content = await fetch_html(explanUrl, questionUrl)
+    interviews = await process_mianshi(paperId, question_content, explan_content)
+    if not interviews:
+        raise Exception("Failed to process interview")
+    for interview in interviews:
+        logger.info(interview["title"])
+        new_interview = await interview_collection.insert_one(interview)
+        created_interview = await interview_collection.find_one({"_id": new_interview.inserted_id})
+        # logger.info(f"Created interview: {created_interview}")
+
+def save_paper_id(url, paper_id):
+
+    path = url.split('?')[-1]
+    path = unquote(path)
+    path = path.replace('cls=', '')
+    path = path.replace('=', '')
+    path = path.replace('&', '')
+
+    fileName = os.path.join("papers", path + ".txt")
+    try:
+        os.makedirs(path, parents=True, exist_ok=True)
+        # logger.info(f"Directory '{path}' is created or already exists.")
+    except Exception as e:
+        logger.info(f"An error occurred while creating the directory: {e}")
+
+    with open(fileName, "a") as file:
+        file.write(f"{paper_id}\n")
+def load_successful_paper_ids(url):
+    path = url.split('?')[-1]
+    path = unquote(path)
+    path = path.replace('cls=', '')
+    path = path.replace('=', '')
+    path = path.replace('&', '')
+    fileName = os.path.join("papers", path + ".txt")
+    try:
+        with open(fileName) as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()        
+def generate_pageurls(n):
+    base_url = "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%9B%BD%E8%80%83&index="
+    
+    # 使用列表推导式生成URL列表
+    urls = [f"{base_url}{i}" for i in range(1, n + 1)]
+    
+    return urls
 
 async def periodic_scraping_task():
-    paperIds = getPaperList()
-    for paperId in paperIds:
-        await scrape(paperId)  # Replace with your target URL
-        await asyncio.sleep(10)  # 每小时运行一次任务
+    url_list = generate_pageurls(4)
+    for url in url_list:
+        logger.info(url)
+        paperIds = await getPaperList(url)
+        logger.info(paperIds)
+        successful_ids = load_successful_paper_ids(url)
+        for paperId in paperIds:
+            if paperId not in successful_ids:
+                # paperId = '1551781245901o2n'
+                # paperId = '1627554027915'
+                try:
+                    logger.info(f"Scraping paper with ID: {paperId}")
+                    await scrape(paperId)
+                    save_paper_id(url, paperId)
+                except Exception as e:
+                    logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
+                
+                await asyncio.sleep(3)  # 每秒钟运行一次任务
+                break
+        break
 

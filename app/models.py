@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, UniqueConstraint
-from .database import Base
+from .database_sql import Base
 
 class Word(Base):
     __tablename__ = 'words'
