@@ -2,7 +2,8 @@
 
 import aiohttp
 import asyncio
-import json
+import time
+import random
 import os
 import base64
 import logging
@@ -81,14 +82,17 @@ async def image2Code(imageUrl):
 imageUrl = "your_image_url_here"
 
 
-async def getUrls(paperId:str) -> dict:
+async def getUrls(paperId:str, referer: str) -> dict:
     # 抓取svgStr
     url = "https://www.gkzenti.cn/captcha/math"
+    timestamp = int(time.time())
     headers = {
         'Accept': "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
+    headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
     svgStr = await fetch_captcha_svg(url, headers)
     # 将转义字符移除
     svg_string = svgStr.replace('\"', '"')
@@ -362,11 +366,13 @@ async def process_mianshi(paperId, question, explanation):
         interviews.append(merged_entry)
     return interviews
 
-async def fetch_html(url, referer=""):
+async def fetch_html(url, referer):
+    timestamp = int(time.time())
     headers = {
         "Accept-Encoding": "gzip, deflate, br",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        # "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     if referer:
@@ -396,13 +402,16 @@ async def getPaperList(url):
 
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
     return papers
-async def scrape(paperId):
+async def scrape(listUrl, paperId):
     interview_collection=await get_interview_collection()
+    questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
+    question_content = await fetch_html(questionUrl, listUrl)
+
     questionUrl, explanUrl = await getUrls(paperId)
     logger.info(f"{questionUrl}, {explanUrl}")
     if(questionUrl == None or explanUrl == None):
         raise Exception("Failed to fetch paper urls")
-    question_content = await fetch_html(questionUrl)
+    
     explan_content = await fetch_html(explanUrl, questionUrl)
     interviews = await process_mianshi(paperId, question_content, explan_content)
     if not interviews:
@@ -463,10 +472,10 @@ async def periodic_scraping_task():
                 # paperId = '1627554027915'
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
-                    await scrape(paperId)
+                    await scrape(url, paperId)
                     save_paper_id(url, paperId)
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
-                
-                await asyncio.sleep(5)  # 每秒钟运行一次任务
+                rand = random.randint(1, 20)
+                await asyncio.sleep(50)  # 每秒钟运行一次任务
 
