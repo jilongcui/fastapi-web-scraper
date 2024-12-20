@@ -220,7 +220,7 @@ async def process_mianshi(paperId, question, explanation):
                 for _, question in enumerate(question_tags):
                     question_text = question.get_text().strip()
                     question_texts.append(question_text)
-                    logger.info(f"{question_text}")
+                    # logger.info(f"{question_text}")
                     # 检查是否含有 img 标签
                     img_tag = question.find('img')
                     if img_tag:
@@ -228,7 +228,7 @@ async def process_mianshi(paperId, question, explanation):
                         src = img_tag['src']
                         # 转换为 markdown 格式
                         image = f"![]({src})"
-                        logger.info(f"image: {image}")
+                        # logger.info(f"image: {image}")
                         question_texts.append(image)
 
                 question_text = '\n'.join(question_texts) 
