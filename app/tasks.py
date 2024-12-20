@@ -503,7 +503,7 @@ async def periodic_scraping_task():
                 # paperId = '1551781245901o2n'
                 # paperId = '1627554027915'
                 # paperId = '1647786976704'
-                paperId = '1661056209087'
+                # paperId = '1661056209087'
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
                     await scrape(url, paperId)
@@ -511,7 +511,7 @@ async def periodic_scraping_task():
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 rand = random.randint(1, 20)
-                break
-                # await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
-        break
+                # break
+                await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
+        # break
 
