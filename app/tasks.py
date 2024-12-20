@@ -212,9 +212,28 @@ async def process_mianshi(paperId, question, explanation):
             logger.info(f"材料: {material}")
 
             # 获取各个试题
-            question_tags = soup.find_all('b')
-            for index, question in enumerate(question_tags, start=1):
-                question_text = question.find_next_sibling('p').get_text().strip()
+            question_start_tags = soup.find_all('b')
+            for index, question_start_tag in enumerate(question_start_tags, start=1):
+                # question_text = question.find_next_sibling('p').get_text().strip()
+                question_tags = question_start_tag.find_next_siblings(['p'])
+                question_texts = []
+                for _, question in enumerate(question_tags):
+                    question_text = question.get_text().strip()
+                    question_texts.append(question_text)
+                    logger.info(f"{question_text}")
+                    # 检查是否含有 img 标签
+                    img_tag = question.find('img')
+                    if img_tag:
+                        # 获取 src
+                        src = img_tag['src']
+                        # 转换为 markdown 格式
+                        image = f"![]({src})"
+                        logger.info(f"image: {image}")
+                        question_texts.append(image)
+
+                question_text = '\n'.join(question_texts) 
+                question_text = re.sub(r"^第\d+题：", "", question_text)                       
+                logger.info(f"{question_text}")
                 # logger.info(f"第{i}题: {question_text}")
                 question_title = f"{title} 第{index}题"
                 questions.append({
@@ -227,7 +246,7 @@ async def process_mianshi(paperId, question, explanation):
                     'origin': title,
                     'introduction': await replace_image_urls(introduction),
                     'material': await replace_image_urls(material),
-                    'text': re.sub(r"^第\d+题：", "", question_text)
+                    'text': await replace_image_urls(question_text)
                 })
         elif len(soup.find_all('h3')) == 1:
             # 获取说明
@@ -249,7 +268,17 @@ async def process_mianshi(paperId, question, explanation):
             question_tags = soup.find_all('h2')[1].find_next_siblings(['p'])
             for index, question in enumerate(question_tags, start=1):
                 question_text = question.get_text().strip()
+                # 检查是否含有 img 标签
+                img_tag = question.find('img')
+                if img_tag:
+                    # 获取 src
+                    src = img_tag['src']
+                    # 转换为 markdown 格式
+                    image = f"![]({src})"
+                    question_text = '\n'.join([question_text, image]).strip()
+                    
                 logger.info(f"{question_text}")
+                question_text = re.sub(r"^第\d+题：", "", question_text)
                 question_title = f"{title} 第{index}题"
                 questions.append({
                     'comment': paperId,
@@ -261,7 +290,7 @@ async def process_mianshi(paperId, question, explanation):
                     'origin': title,
                     'introduction': await replace_image_urls(introduction),
                     'material': await replace_image_urls(material),
-                    'text': re.sub(r"^第\d+题：", "", question_text)
+                    'text': await replace_image_urls(question_text)
                 })
         
 
@@ -473,6 +502,8 @@ async def periodic_scraping_task():
             if paperId not in successful_ids:
                 # paperId = '1551781245901o2n'
                 # paperId = '1627554027915'
+                # paperId = '1647786976704'
+                paperId = '1661056209087'
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
                     await scrape(url, paperId)
@@ -480,5 +511,7 @@ async def periodic_scraping_task():
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 rand = random.randint(1, 20)
-                await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
+                break
+                # await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
+        break
 
