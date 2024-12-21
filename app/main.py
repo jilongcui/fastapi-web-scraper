@@ -3,7 +3,8 @@ import asyncio
 import uvicorn
 import signal
 from contextlib import asynccontextmanager
-from app.tasks import periodic_scraping_task  # 导入你定义的爬虫任务
+from app.tasks_province import periodic_scraping_task  # 导入省考爬虫任务
+# from app.tasks import periodic_scraping_task  # 导入国考爬虫任务
 from app.logs import get_logger
 
 

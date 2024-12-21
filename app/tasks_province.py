@@ -128,7 +128,7 @@ def getTitleInfo(title):
         
         logger.info(f"主题: {title}")
         logger.info(f"  年份: {year}")
-        logger.info(f"  单位 (): {department}\n")
+        logger.info(f"  单位: {department}\n")
         return year, department
     return None, None
 
@@ -239,8 +239,8 @@ async def process_mianshi(paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'province': '国家',
-                    'departmentId': '1',
+                    'province': department,
+                    'departmentId': '0',
                     'department': department,
                     'title': question_title,
                     'origin': title,
@@ -283,8 +283,8 @@ async def process_mianshi(paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'province': '国家',
-                    'departmentId': '1',
+                    'province': department,
+                    'departmentId': '0',
                     'department': department,
                     'title': question_title,
                     'origin': title,
@@ -485,11 +485,26 @@ def load_successful_paper_ids(url):
         return set()        
 def generate_pageurls(n):
     #base_url = "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%9B%BD%E8%80%83&index="
-    base_url = "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%99%E6%B1%9F&index="
+    # base_url = "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%99%E6%B1%9F&index="
     
     # 使用列表推导式生成URL列表
-    urls = [f"{base_url}{i}" for i in reversed(range(1, n + 1))]
-    
+    # urls = [f"{base_url}{i}" for i in reversed(range(1, n + 1))]
+    urls = [
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%99%E6%B1%9F&index=",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E4%B8%9C",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E4%B8%9C&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B1%9F%E8%8B%8F",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E4%B8%9C",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E4%B8%9C&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%9B%9B%E5%B7%9D",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%A6%8F%E5%BB%BA",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%A6%8F%E5%BB%BA&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E8%A5%BF",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%AE%89%E5%BE%BD",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%B8%8A%E6%B5%B7"
+
+
+    ]
     return urls
 
 async def periodic_scraping_task():
