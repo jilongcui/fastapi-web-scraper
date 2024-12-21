@@ -42,7 +42,7 @@ async def start_scraping_task():
 
         # 假设此函数是你实际执行的抓取任务
         await periodic_scraping_task()  
-
+        shutdown_event.set()
         # 每分钟运行一次任务
         await asyncio.sleep(5)
     # 在退出主循环之前进行一些清理
