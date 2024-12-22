@@ -121,6 +121,7 @@ def getTitleInfo(title):
 
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
+    title = title.replace("（网友回忆版）", "")
     match = re.search(pattern, title)
     if match:
         year = match.group('year')
