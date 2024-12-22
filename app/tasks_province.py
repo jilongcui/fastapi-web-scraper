@@ -463,12 +463,7 @@ def save_paper_id(url, paper_id):
     path = path.replace('&', '')
 
     fileName = os.path.join("papers", path + ".txt")
-    try:
-        os.makedirs(path, exist_ok=True)
-        # logger.info(f"Directory '{path}' is created or already exists.")
-    except Exception as e:
-        logger.info(f"An error occurred while creating the directory: {e}")
-
+    
     with open(fileName, "a") as file:
         file.write(f"{paper_id}\n")
 def load_successful_paper_ids(url):
@@ -546,6 +541,12 @@ def generate_pageurls(n):
     return urls
 
 async def periodic_scraping_task():
+    try:
+        os.makedirs('papers', exist_ok=True)
+        # logger.info(f"Directory '{path}' is created or already exists.")
+    except Exception as e:
+        logger.info(f"An error occurred while creating the directory: {e}")
+
     url_list = generate_pageurls(1)
     for url in url_list:
         logger.info(url)
