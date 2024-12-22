@@ -489,7 +489,7 @@ def generate_pageurls(n):
     
     # 使用列表推导式生成URL列表
     # urls = [f"{base_url}{i}" for i in reversed(range(1, n + 1))]
-    urls = [
+    urls2 = [
         "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%99%E6%B1%9F&index=",
         "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E4%B8%9C",
         "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E4%B8%9C&index=2",
@@ -502,9 +502,47 @@ def generate_pageurls(n):
         "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E8%A5%BF",
         "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%AE%89%E5%BE%BD",
         "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%B8%8A%E6%B5%B7"
+    ]
 
+    urls = [
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E5%B7%9E",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B7%B1%E5%9C%B3",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%8C%97%E4%BA%AC",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%8C%97%E4%BA%AC&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%A4%A9%E6%B4%A5",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8C%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8C%97&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8C%97&index=3",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%B7%E5%8D%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8D%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B1%9F%E8%A5%BF",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B9%96%E5%8D%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B9%96%E5%8C%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B9%96%E5%8C%97&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=3",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=4",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=5",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%86%85%E8%92%99%E5%8F%A4",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%90%89%E6%9E%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%BB%91%E9%BE%99%E6%B1%9F",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E8%B4%B5%E5%B7%9E",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%87%8D%E5%BA%86",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%99%95%E8%A5%BF",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%99%95%E8%A5%BF&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%94%98%E8%82%83",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%94%98%E8%82%83&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%BA%91%E5%8D%97",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%BA%91%E5%8D%97&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%96%B0%E7%96%86",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%96%B0%E7%96%86&index=2",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%AE%81%E5%A4%8F",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%9D%92%E6%B5%B7",
+        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%9D%92%E6%B5%B7&index=2",
 
     ]
+
     return urls
 
 async def periodic_scraping_task():
