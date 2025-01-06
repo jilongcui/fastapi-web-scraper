@@ -18,3 +18,6 @@ except Exception as e:
 # interview_collection = database.interviews  # 集合名称：users
 async def get_interview_collection():
     return database.get_collection('interviews')
+
+async def get_discussion_collection():
+    return database.get_collection('discussions')
