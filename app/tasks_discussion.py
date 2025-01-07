@@ -88,8 +88,9 @@ async def getDecodedUrls(paperId:str) -> dict:
     timestamp = int(time.time())
     headers = {
         'Accept': "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
-        "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        # 'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
@@ -110,19 +111,19 @@ async def getDecodedUrls(paperId:str) -> dict:
     data = await image2Code(data_uri)
     code = data.get("answer")
     code = int(code)
-    questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     explanUrl = f"https://www.gkzenti.cn/explain/{paperId}?mathcode={code}"
-    return questionUrl, explanUrl
+    return explanUrl
 
 import re
 def getTitleInfo(title):
     # 定义正则表达式模式，忽略月份
     # pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)面试'
     pattern = r'(?P<year>\d{4})年'
-
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
     title = title.replace("（网友回忆版）", "")
+    logger.info(title)
+
     match = re.search(pattern, title)
     if match:
         year = match.group('year')
@@ -193,12 +194,13 @@ async def process_discussion(paperId, question, explanation):
         year, department = getTitleInfo(title)
         logger.info(f"试卷名称: {title}")
         questions = []
-
+        material_points_tags = []
+        introduction = ''
         if len(soup.find_all('h3')) == 3:
             index = 1
             # 获取说明
             introduction = soup.find_all('h3')[1].find_next_sibling(text=True).strip()
-            logger.info(f"说明: {introduction}")
+            # logger.info(f"说明: {introduction}")
             # 获取材料
             material = soup.find_all('h3')[2].find_next().get_text().strip()
             material_points_tags = soup.find_all('h3')[2].find_next_siblings(['p','b'])
@@ -211,7 +213,7 @@ async def process_discussion(paperId, question, explanation):
                 text_content = tag.get_text(strip=True)
                 material_points.append(text_content)
             material = '\n'.join(material_points)
-            logger.info(f"材料: {material}")
+            # logger.info(f"材料: {material}")
 
             # 获取各个试题
             question_start_tags = soup.find_all('b')
@@ -235,14 +237,14 @@ async def process_discussion(paperId, question, explanation):
 
                 question_text = '\n'.join(question_texts)
                 question_text = re.sub(r"^第\d+题：", "", question_text)                       
-                logger.info(f"{question_text}")
+                # logger.info(f"{question_text}")
                 # logger.info(f"第{i}题: {question_text}")
                 question_title = f"{title} 第{index}题"
                 questions.append({
                     'comment': paperId,
                     'year': year,
                     'province': department,
-                    'departmentId': '0',
+                    'departmentId': '1',
                     'department': department,
                     'title': question_title,
                     'origin': title,
@@ -254,21 +256,29 @@ async def process_discussion(paperId, question, explanation):
             # 获取说明
             # introduction = soup.find_all('h2')[0].find_next_sibling(text=True).strip()
             # 提取审题部分紧接着的p标签内容，根据需求调整选择器
-            introduction_points_tags = soup.find_all('h2')[0].find_next_siblings(['p','h2'])
-            introduction_points = []
-            for tag in introduction_points_tags:
-                if tag.name == 'h2':
-                    break
-                text_content = tag.get_text(strip=True)
-                introduction_points.append(text_content)
-            introduction = '\n'.join(introduction_points)
-            introduction = await replace_image_urls(introduction)
-            logger.info(f"说明: {introduction}")
+            if len(soup.find_all('h2')) > 2:
+                introduction_points_tags = soup.find_all('h2')[0].find_next_siblings(['p','h2'])
+                introduction_points = []
+                for tag in introduction_points_tags:
+                    if tag.name == 'h2':
+                        break
+                    text_content = tag.get_text(strip=True)
+                    introduction_points.append(text_content)
+                introduction = '\n'.join(introduction_points)
+                introduction = await replace_image_urls(introduction)
+                # logger.info(f"说明: {introduction}")
+                material_points_tags = soup.find_all('h2')[1].find_next_siblings(['p','h2'])
+            else:
+                if soup.find('div', id='printcontent'):
+                    content_div = soup.find('div', id='printcontent').find('div')
+                    material_points_tags = content_div.find_next('p').find_next_siblings(['p'])
+                    
+            logger.info(f"material_points_tags: {material_points_tags}")
 
             # 提取材料
             material_list = []
-            material_points_tags = soup.find_all('h2')[1].find_next_siblings(['p','h2'])
             material_points = []
+            next_tag_p = None
             for tag in material_points_tags:
                 if tag.name == 'h2':
                     # 新的材料主题
@@ -278,10 +288,19 @@ async def process_discussion(paperId, question, explanation):
                         material_list.append(material_content)
                         material_points = []
                     break
-                
+                # elif tag.find('b'):
+                #     # 新的材料主题
+                #     next_tag_p = tag
+                #     if len(material_points) > 0:
+                #         material_content = '\n'.join(material_points)
+                #         material_content = await replace_image_urls(material_content)
+                #         material_list.append(material_content)
+                #         material_points = []
+                #     break
+
                 text_content = tag.get_text(strip=True)
-                pattern = r'^材料\d{4}'
-                match = re.search(pattern, tag.name)
+                pattern = r'材料\d{1}'
+                match = re.search(pattern, text_content)
                 if match:
                     # 新的材料主题
                     if len(material_points) > 0:
@@ -291,14 +310,22 @@ async def process_discussion(paperId, question, explanation):
                         material_points = []
                 material_points.append(text_content)
             
+            logger.info(f"material_list {material_list}")
             for index, material in enumerate(material_list):
                 logger.info(f"材料: {material}")
             
             # 获取题目
-            question_tags = soup.find_all('h2')[2].find_next_siblings(['p'])
+            if len(soup.find_all('h2')) > 2:
+                question_tags = soup.find_all('h2')[2].find_next_siblings(['p'])
+            elif next_tag_p:
+                    content_div = soup.find('div', id='printcontent').find('div').find()
+                    question_tags = next_tag_p.find_next_siblings(['p'])
+            
+            logger.info(f"next_tag_p {next_tag_p}")
+
             question_text_list = []
-            question_content_list = []
-            for index, question in enumerate(question_tags, start=1):
+            index = 1
+            for _, question in enumerate(question_tags):
                 question_text = question.get_text().strip()
                 # 检查是否含有 img 标签
                 img_tag = question.find('img')
@@ -309,36 +336,101 @@ async def process_discussion(paperId, question, explanation):
                     image = f"![]({src})"
                     question_text = '\n'.join([question_text, image])
 
-                question_title = f"{title} 第{index}题"
-                logger.info(f"{question_text}")
-                pattern = r"（(\d+)）分"
-                match = re.search(pattern, question_text)
-                if match:
-                    # 这里是标题
-                    # 先把前面的内容给集成进去
-                    fullScore = match.group(1)
-                    if len(question_text_list)>0:
-                        question_content = '\n'.join(question_text_list)
-                        question_content = await replace_image_urls(question_content)
-                        # question_content_list.append(question_content)
-                        questions.append({
-                            'comment': paperId,
-                            'year': year,
-                            'province': department,
-                            'departmentId': '0',
-                            'department': department,
-                            'name': question_title,
-                            'typeId': 1,
-                            'origin': title,
-                            'fullScore': fullScore,
-                            'introduction': introduction,
-                            'contents': material_list,
-                            'text': question_content
-                        })
-                        question_text_list = []
+                if len(soup.find_all('h2')) > 2:
+                    pattern = r'(\d+)分'
+                    match = re.search(pattern, question_text)
+                    if match:
+                        # 这里是标题
+                        # 先把前面的内容给集成进去
+                        
+                        if len(question_text_list)>0:
+                            question_title = f"{title} 第{index}题"
+                            
+                            question_content = '\n'.join(question_text_list)
+                            question_content = await replace_image_urls(question_content)
+                            # question_content_list.append(question_content)
+                            match = re.search(pattern, question_content)
+                            fullScore = match.group(1)
+                            logger.info(f"{title} 第{index}题 fullScore {fullScore}")
+                            questions.append({
+                                'comment': paperId,
+                                'year': year,
+                                'province': department,
+                                'departmentId': '1',
+                                'department': department,
+                                'name': question_title,
+                                'typeId': 1,
+                                'origin': title,
+                                'fullScore': fullScore,
+                                'introduction': introduction,
+                                'contents': material_list,
+                                'text': question_content
+                            })
+                            question_text_list = []
+                            index += 1
+                    question_text_list.append(question_text)
+                elif len(soup.find_all('b')) >= 2:
+                    match = re.match(r'^第[一二三四五六七八九十]+题：$', question_text)
+                    if match:
+                        question_title = f"{title} 第{index}题"
+                        if len(question_text_list)>0:
+                            question_content = '\n'.join(question_text_list)
+                            question_content = await replace_image_urls(question_content)
+                            # question_content_list.append(question_content)
+                            pattern = r'(\d+)分'
+                            fullScore = 0
+                            match = re.search(pattern, question_content)
+                            if match:
+                                fullScore = match.group(1)
+                                logger.info(f"{title} 第{index}题 fullScore {fullScore}")
+                            questions.append({
+                                'comment': paperId,
+                                'year': year,
+                                'province': department,
+                                'departmentId': '1',
+                                'department': department,
+                                'name': question_title,
+                                'typeId': 1,
+                                'origin': title,
+                                'fullScore': fullScore,
+                                'introduction': introduction,
+                                'contents': material_list,
+                                'text': question_content
+                            })
+                            question_text_list = []
+                            index += 1
+                    
+                    question_text_list.append(question_text)
+                    
 
-                question_text_list.append(question_text)
-        
+            if len(question_text_list)>0:
+                question_title = f"{title} 第{index}题"
+                question_content = '\n'.join(question_text_list)
+                question_content = await replace_image_urls(question_content)
+                # question_content_list.append(question_content)
+                fullScore = 0
+                pattern = r'（(\d+)分）'
+                match = re.search(pattern, question_content)
+                if match:
+                    fullScore = match.group(1)
+                    logger.info(f"{title} 第{index}题 fullScore {fullScore}")
+                questions.append({
+                    'comment': paperId,
+                    'year': year,
+                    'province': department,
+                    'departmentId': '1',
+                    'department': department,
+                    'name': question_title,
+                    'typeId': 1,
+                    'origin': title,
+                    'fullScore': fullScore,
+                    'introduction': introduction,
+                    'contents': material_list,
+                    'text': question_content
+                })
+        for idx, question in enumerate(questions):
+            logger.info(f"题目 {idx + 1}: {question['name']}")
+
     except Exception as e:
             # Rollback on error to maintain consistency and log details for debugging
             # db.rollback()
@@ -351,6 +443,7 @@ async def process_discussion(paperId, question, explanation):
         
         # logger.info(f"{explanation}")
         # 从HTML文本创建一个BeautifulSoup对象，使用lxml作为解析器
+        explanation = re.sub(r'<p=\s*align:\s*center\s*>', r'<p align="center">', explanation)
         soup = BeautifulSoup(explanation, 'html.parser')
 
         # 找到试卷名称
@@ -363,8 +456,21 @@ async def process_discussion(paperId, question, explanation):
         explanations = []
         index = 1
         # 找到所有 <blockquote><p> ，标记每组 "参考答案" 的起始
-        answer_blocks = soup.find_all('blockquote')
+        # answer_blocks = soup.find_all('blockquote')
 
+        answer_blocks = exam_title_tag.find_all_next('blockquote')
+        if len(answer_blocks) == 0:
+            answer_blocks = exam_title_tag.find_all_next('div', class_='bs-callout')
+            if len(answer_blocks) == 0 and soup.find('div', id='printcontent'):
+                content_div = soup.find('div', id='printcontent').find('div')
+                for title_p in content_div.find_all('p'):
+                    if title_p.find('b'):
+                        answer_blocks.append(title_p)
+
+        logger.info(f"{answer_blocks}")
+        if len(answer_blocks) == 0:
+            raise HTTPException(status_code=500, detail="Answer block is empty")
+        
         answers_list = []
         for block in answer_blocks:
             # 收集此 block 后面的<p>直到下一次 <blockquote> 或文档结尾
@@ -373,18 +479,20 @@ async def process_discussion(paperId, question, explanation):
             
             while next_sibling and next_sibling.name == 'p':
                 items_text = next_sibling.get_text(separator="\n").strip()
+                # logger.info(items_text)
                 answer_items.append(items_text)
                 next_sibling = next_sibling.find_next_sibling('p')
+            
             if len(answer_items)>0:
                 answers_list.append('\n'.join(answer_items))
 
         # 显示结果
         for idx, answer in enumerate(answers_list):
-            print(f"参考答案 {idx + 1}:")
+            logger.info(f"参考答案 {idx + 1}:")
             explanations.append({
                 # 'analysis': '\n'.join(analysis_points),
                 # 'mindmapUrl': mind_map_image_url,
-                'demo': answer,
+                'sampleAnswer': answer,
             })
             index += 1
         # return {"message": "Article processed and data updated successfully."}
@@ -393,19 +501,25 @@ async def process_discussion(paperId, question, explanation):
         # db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     # 将每个 questions 和 explanations 元素的字段合并到一个新的字典中，添加到 interview 列表中
+    logger.info(f"questions length {len(questions)}")
+    logger.info(f"explanations length {len(explanations)}")
     interviews = []
     for q, e in zip(questions, explanations):
         merged_entry = {**q, **e}
         interviews.append(merged_entry)
+    logger.info(f"interviews length {len(interviews)}")
     return interviews
 
 async def fetch_html(url, referer: str = None):
+    logger.info(url)
     timestamp = int(time.time())
     headers = {
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         # "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
-        "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     if referer:
@@ -440,19 +554,24 @@ async def scrape(listUrl, paperId):
     paperUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     paper_content = await fetch_html(paperUrl, listUrl)
 
-    questionUrl, explanUrl = await getDecodedUrls(paperId)
-    logger.info(f"{questionUrl}, {explanUrl}")
-    if(questionUrl == None or explanUrl == None):
+    explanUrl = f"https://www.gkzenti.cn/explain/{paperId}"
+
+    explan_content = await fetch_html(explanUrl)
+    
+    explanWithCodeUrl = await getDecodedUrls(paperId)
+
+    logger.info(f"{explanUrl}, {explanWithCodeUrl}")
+    if(explanUrl == None or explanWithCodeUrl == None):
         raise Exception("Failed to fetch paper urls")
     
-    explan_content = await fetch_html(explanUrl, questionUrl)
+    explan_content = await fetch_html(explanWithCodeUrl, explanUrl)
     discussions = await process_discussion(paperId, paper_content, explan_content)
     if not discussions:
         raise Exception("Failed to process discussion")
     
     discussion_collection=await get_discussion_collection()
     for discussion in discussions:
-        logger.info(discussion["title"])
+        logger.info(discussion["name"])
         new_discussion = await discussion_collection.insert_one(discussion)
         created_interview = await discussion_collection.find_one({"_id": new_discussion.inserted_id})
         # logger.info(f"Created interview: {created_interview}")
@@ -516,7 +635,8 @@ async def periodic_scraping_task():
 
     url_list = generate_pageurls(1)
     for url in url_list:
-        url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E6%B5%99%E6%B1%9F&index=1",
+        # url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E6%B5%99%E6%B1%9F&index=1"
+        url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%9B%BD%E8%80%83&index=1"
         logger.info(url)
         paperIds = await getPaperList(url)
         logger.info(paperIds)
