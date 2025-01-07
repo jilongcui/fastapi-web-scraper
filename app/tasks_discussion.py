@@ -273,7 +273,7 @@ async def process_discussion(paperId, question, explanation):
                     content_div = soup.find('div', id='printcontent').find('div')
                     material_points_tags = content_div.find_next('p').find_next_siblings(['p'])
                     
-            logger.info(f"material_points_tags: {material_points_tags}")
+            # logger.info(f"material_points_tags: {material_points_tags}")
 
             # 提取材料
             material_list = []
