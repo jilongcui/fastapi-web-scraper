@@ -310,9 +310,9 @@ async def process_discussion(paperId, question, explanation):
                         material_points = []
                 material_points.append(text_content)
             
-            logger.info(f"material_list {material_list}")
+            # logger.info(f"material_list {material_list}")
             for index, material in enumerate(material_list):
-                logger.info(f"材料: {material}")
+                logger.info(f"材料: {index}")
             
             # 获取题目
             if len(soup.find_all('h2')) > 2:
