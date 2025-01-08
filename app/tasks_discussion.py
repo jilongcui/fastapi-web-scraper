@@ -90,7 +90,8 @@ async def getDecodedUrls(paperId:str) -> dict:
         'Accept': "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         # 'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
         # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
-        "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        # "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E6%B5%99%E6%B1%9F; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
@@ -521,7 +522,8 @@ async def fetch_html(url, referer: str = None):
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         # "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
         # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
-        "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        # "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3Ae2VDDxSsjro9jpjIo6xX-b2ZgyS34FQN.GeKw6EjEaMKPbEBIJ3C1ldh5jRuoAcBvbTEqYUuYwN0; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734658177; HMACCOUNT=C3C8CCD265B20BCC; cls=%E7%94%B3%E8%AE%BA; province=%E6%B5%99%E6%B1%9F; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
         "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
     }
     if referer:
