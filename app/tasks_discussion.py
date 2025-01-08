@@ -118,7 +118,7 @@ async def getDecodedUrls(paperId:str) -> dict:
     return explanUrl
 
 import re
-def getTitleInfo(title):
+def getTitleInfo(province, title):
     # 定义正则表达式模式，忽略月份
     # pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)面试'
     pattern = r'(?P<year>\d{4})年'
@@ -131,7 +131,7 @@ def getTitleInfo(title):
     if match:
         year = match.group('year')
         # department = match.group('department')
-        department = "国家"
+        department = province
         logger.info(f"主题: {title}")
         logger.info(f"  年份: {year}")
         logger.info(f"  省份: {province}")
@@ -195,7 +195,7 @@ async def process_discussion(province, paperId, question, explanation):
         # 获取试卷名称
         title = soup.find('h3', align='center').string
         logger.info(f"试卷名称: {title}")
-        year, department = getTitleInfo(title)
+        year, department = getTitleInfo(province, title)
         logger.info(f"试卷名称: {title}")
         questions = []
         material_points_tags = []
@@ -392,7 +392,7 @@ async def process_discussion(province, paperId, question, explanation):
                                 'year': year,
                                 'province': province,
                                 'departmentId': '0',
-                                'department': province,
+                                'department': department,
                                 'name': question_title,
                                 'typeId': 1,
                                 'origin': title,
@@ -423,7 +423,7 @@ async def process_discussion(province, paperId, question, explanation):
                     'year': year,
                     'province': province,
                     'departmentId': '0',
-                    'department': province,
+                    'department': department,
                     'name': question_title,
                     'typeId': 1,
                     'origin': title,
