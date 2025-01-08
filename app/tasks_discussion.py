@@ -185,7 +185,7 @@ async def replace_image_urls(markdown_text, authToken=""):
                         logger.info(f"Request failed with status code: {data}")
                 
     return new_markdown
-async def process_discussion(paperId, question, explanation):
+async def process_discussion(province, paperId, question, explanation):
 
     # 解析题目
     try:
@@ -556,7 +556,7 @@ async def getPaperList(url):
 
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
     return papers
-async def scrape(listUrl, paperId):
+async def scrape(province, listUrl, paperId):
     
     paperUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     paper_content = await fetch_html(paperUrl, listUrl)
@@ -572,7 +572,7 @@ async def scrape(listUrl, paperId):
         raise Exception("Failed to fetch paper urls")
     
     explan_content = await fetch_html(explanWithCodeUrl, explanUrl)
-    discussions = await process_discussion(paperId, paper_content, explan_content)
+    discussions = await process_discussion(province, paperId, paper_content, explan_content)
     if not discussions:
         raise Exception("Failed to process discussion")
     
@@ -648,6 +648,7 @@ async def periodic_scraping_task():
         pattern = r'province=([^&]*)'
         # 使用 re.search() 在 URL 中查找模式
         match = re.search(pattern, url)
+        province = '国家'
         if match:
             province = match.group(1)  # 提取第一个捕获组，即 province 的值
             if province == "国考":
@@ -664,7 +665,7 @@ async def periodic_scraping_task():
                 # paperId = '1661056209087'
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
-                    await scrape(url, paperId)
+                    await scrape(province, url, paperId)
                     save_paper_id(url, paperId)
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
