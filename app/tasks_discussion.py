@@ -504,7 +504,7 @@ async def process_discussion(paperId, question, explanation):
     logger.info(f"questions length {len(questions)}")
     logger.info(f"explanations length {len(explanations)}")
     interviews = []
-    if len(questions) == len(explanations):
+    if len(questions) != len(explanations):
         raise HTTPException(status_code=500, detail="questions length is not equal to explanations length")
     for q, e in zip(questions, explanations):
         merged_entry = {**q, **e}
