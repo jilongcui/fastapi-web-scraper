@@ -638,7 +638,7 @@ async def periodic_scraping_task():
     url_list = generate_pageurls(1)
     for url in url_list:
         # url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E6%B5%99%E6%B1%9F&index=1"
-        url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%9B%BD%E8%80%83&index=1"
+        # url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%9B%BD%E8%80%83&index=1"
         logger.info(url)
         paperIds = await getPaperList(url)
         logger.info(paperIds)
@@ -658,5 +658,5 @@ async def periodic_scraping_task():
                 rand = random.randint(1, 20)
                 # break
                 await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
-        break
+        # break
 
