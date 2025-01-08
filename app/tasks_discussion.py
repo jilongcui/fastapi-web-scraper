@@ -631,6 +631,29 @@ def generate_pageurls(n):
         "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=天津&index=1", # 天津
     ]
 
+    urls = [
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=河北&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=海南&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=河南&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=江西&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=湖南&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=湖北&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=山西&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=内蒙古&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=吉林&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=黑龙江&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=贵州&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=重庆&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=陕西&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=甘肃&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=云南&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=新疆&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=宁夏&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=青海&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=深圳&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=广州&index=1",
+    ]
+
     return urls
 
 async def periodic_scraping_task():
