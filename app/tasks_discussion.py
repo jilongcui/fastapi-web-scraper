@@ -29,6 +29,8 @@ file_handler = logging.FileHandler('app.log')
 file_handler.setFormatter(log_formatter)
 logger.addHandler(file_handler)
 
+province = "国考"
+
 async def fetch_captcha_svg(url, headers):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
@@ -132,6 +134,7 @@ def getTitleInfo(title):
         department = "国家"
         logger.info(f"主题: {title}")
         logger.info(f"  年份: {year}")
+        logger.info(f"  省份: {province}")
         logger.info(f"  单位: {department}\n")
         return year, department
     return None, None
@@ -244,8 +247,8 @@ async def process_discussion(paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'province': department,
-                    'departmentId': '1',
+                    'province': province,
+                    'departmentId': '0',
                     'department': department,
                     'title': question_title,
                     'origin': title,
@@ -356,8 +359,8 @@ async def process_discussion(paperId, question, explanation):
                             questions.append({
                                 'comment': paperId,
                                 'year': year,
-                                'province': department,
-                                'departmentId': '1',
+                                'province': province,
+                                'departmentId': '0',
                                 'department': department,
                                 'name': question_title,
                                 'typeId': 1,
@@ -387,9 +390,9 @@ async def process_discussion(paperId, question, explanation):
                             questions.append({
                                 'comment': paperId,
                                 'year': year,
-                                'province': department,
-                                'departmentId': '1',
-                                'department': department,
+                                'province': province,
+                                'departmentId': '0',
+                                'department': province,
                                 'name': question_title,
                                 'typeId': 1,
                                 'origin': title,
@@ -418,9 +421,9 @@ async def process_discussion(paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'province': department,
-                    'departmentId': '1',
-                    'department': department,
+                    'province': province,
+                    'departmentId': '0',
+                    'department': province,
                     'name': question_title,
                     'typeId': 1,
                     'origin': title,
@@ -613,19 +616,19 @@ def generate_pageurls(n):
 
 
     urls = [
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%9B%BD%E8%80%83&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E6%B5%99%E6%B1%9F&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%B1%B1%E4%B8%9C&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E6%B1%9F%E8%8B%8F&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%B9%BF%E4%B8%9C&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%9B%9B%E5%B7%9D&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E7%A6%8F%E5%BB%BA&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%B9%BF%E8%A5%BF&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%AE%89%E5%BE%BD&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E4%B8%8A%E6%B5%B7&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%8C%97%E4%BA%AC&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E8%BE%BD%E5%AE%81&index=1",
-        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%A4%A9%E6%B4%A5&index=1", # 天津
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=国考&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=浙江&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=山东&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=江苏&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=广东&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=四川&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=福建&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=广西&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=安徽&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=上海&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=北京&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=辽宁&index=1",
+        "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=天津&index=1", # 天津
     ]
 
     return urls
@@ -642,6 +645,12 @@ async def periodic_scraping_task():
         # url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E6%B5%99%E6%B1%9F&index=1"
         # url = "https://www.gkzenti.cn/paper?cls=%E7%94%B3%E8%AE%BA&province=%E5%9B%BD%E8%80%83&index=1"
         logger.info(url)
+        pattern = r'province=([^&]*)'
+        # 使用 re.search() 在 URL 中查找模式
+        match = re.search(pattern, url)
+        if match:
+            province = match.group(1)  # 提取第一个捕获组，即 province 的值
+        logger.info("Province:", province)
         paperIds = await getPaperList(url)
         logger.info(paperIds)
         successful_ids = load_successful_paper_ids(url)
