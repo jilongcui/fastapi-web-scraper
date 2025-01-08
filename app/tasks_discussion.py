@@ -29,7 +29,7 @@ file_handler = logging.FileHandler('app.log')
 file_handler.setFormatter(log_formatter)
 logger.addHandler(file_handler)
 
-province = "国考"
+province = "国家"
 
 async def fetch_captcha_svg(url, headers):
     async with aiohttp.ClientSession() as session:
@@ -650,7 +650,9 @@ async def periodic_scraping_task():
         match = re.search(pattern, url)
         if match:
             province = match.group(1)  # 提取第一个捕获组，即 province 的值
-        logger.info("Province:", province)
+            if province == "国考":
+                province = "国家"
+        logger.info(f"Province: {province}")
         paperIds = await getPaperList(url)
         logger.info(paperIds)
         successful_ids = load_successful_paper_ids(url)
