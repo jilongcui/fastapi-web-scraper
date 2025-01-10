@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 # from app.tasks_interview import periodic_scraping_task  # 导入省考爬虫任务
 from app.tasks_discussion import periodic_scraping_task  # 导入申论爬虫任务
 # from app.tasks import periodic_scraping_task  # 导入国考爬虫任务
+from app.tasks_discussion import process_discussion_types # 导入申论类型检查
 from app.logs import get_logger
 
 
@@ -25,7 +26,10 @@ async def lifespan(app: FastAPI):
     print("Starting up...")
     
     # 启动爬虫定时任务在后台协程中运行
-    scraping_task = asyncio.create_task(start_scraping_task())
+    # scraping_task = asyncio.create_task(start_scraping_task())
+
+    # 启动爬虫定时任务在后台协程中运行
+    scraping_task = asyncio.create_task(start_process_types_task())
 
     try:
         yield
@@ -49,6 +53,17 @@ async def start_scraping_task():
     # 在退出主循环之前进行一些清理
     logger.info("Scraping task is shutting down.")
 
+async def start_process_types_task():
+    while not shutdown_event.is_set():
+        logger.info("Starting scraping task...")
+
+        # 假设此函数是你实际执行的抓取任务
+        await process_discussion_types()  
+        shutdown_event.set()
+        # 每分钟运行一次任务
+        await asyncio.sleep(1)
+    # 在退出主循环之前进行一些清理
+    logger.info("Scraping task is shutting down.")
 
 # 将 lifespan 函数连接到 FastAPI 应用上
 app = FastAPI(lifespan=lifespan)

@@ -697,3 +697,25 @@ async def periodic_scraping_task():
                 await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
         # break
 
+
+async def fetch_from_external_service(record_id):
+    url = f"https://mian.xiaohe.biz/api/sys/discussions/checkTypes/{record_id}"
+    headers = {
+        # 'Authentication': f'{authToken}',  # 确保替换为你的真实认证令牌
+        'Content-Type': 'application/json'
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers) as response:
+            return await response.json()
+
+async def process_discussion_types():
+    collection = await get_discussion_collection()
+    
+    cursor = collection.find({})
+    discussions = await cursor.to_list(length=None)
+    
+    for discussion in discussions:
+        record_id = discussion.get("_id")
+        if record_id:
+            result = await fetch_from_external_service(record_id)
+            print(result)  # 或者根据需要进行进一步的操作
