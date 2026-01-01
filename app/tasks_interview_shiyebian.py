@@ -84,7 +84,7 @@ imageUrl = "your_image_url_here"
 
 async def getUrls(paperId:str) -> dict:
     
-    await fetch_html(f"https://www.gkzenti.cn/explain/{paperId}",f"https://www.gkzenti.cn/paper/{paperId}")
+    # await fetch_html(f"https://www.gkzenti.cn/explain/{paperId}",f"https://www.gkzenti.cn/paper/{paperId}")
     # await asyncio.sleep(5)
     # 抓取svgStr
     url = "https://www.gkzenti.cn/captcha/math"
@@ -97,6 +97,7 @@ async def getUrls(paperId:str) -> dict:
         
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
     }
+    logger.info(f"Headers: {headers}")
     headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
     svgStr = await fetch_captcha_svg(url, headers)
     # 将转义字符移除
@@ -110,11 +111,12 @@ async def getUrls(paperId:str) -> dict:
 
     # 创建Data URI格式
     data_uri = f'data:image/svg+xml;charset=utf-8;base64,{base64_encoded_svg}'
-    
+    logger.info(f"SvgImage: {data_uri}")
     # 假设image2Answer是在其他地方定义的函数，用于处理encoded data和authentication token。
     data = await image2Code(data_uri)
     code = data.get("answer")
     code = int(code)
+    logger.info(f"code: {code}")
     questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     explanUrl = f"https://www.gkzenti.cn/explain/{paperId}?mathcode={code}"
     return questionUrl, explanUrl
