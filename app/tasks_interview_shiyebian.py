@@ -124,7 +124,9 @@ async def getUrls(paperId:str) -> dict:
 import re
 def getTitleInfo(title):
     # 定义正则表达式模式，忽略月份
-    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(?:面试|真题|面试真题)?'
+    # 2020年7月11日浙江湖州南浔区医疗卫生单位公开招聘事业编制人员面试题
+    # 2016年6月17日浙江省金华市面试真题
+    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(?:面试题?|真题|面试真题)?\s*$'
 
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
@@ -664,6 +666,7 @@ async def periodic_scraping_task():
                 # paperId = '1668003216766'
                 # paperId = '1702961776894'
                 # paperId = '1667998867772'
+                paperId = '16014701670976nu'
                 max_retries = 3
                 success = False
                 last_error = None
