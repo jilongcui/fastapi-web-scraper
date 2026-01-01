@@ -126,11 +126,13 @@ def getTitleInfo(title):
     # 定义正则表达式模式，忽略月份
     # 2020年7月11日浙江湖州南浔区医疗卫生单位公开招聘事业编制人员面试题
     # 2016年6月17日浙江省金华市面试真题
-    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(?:面试题?|真题|面试真题)?\s*$'
+    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(?:面试真题|面试题?|真题)?\s*$'
 
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
-    title = title.replace("（网友回忆版）", "")
+    # title = title.replace("（网友回忆版）", "")
+    # 自动去除所有（xxx）格式的内容
+    title = re.sub(r'（[^）]*）', '', title)
     match = re.search(pattern, title)
     if match:
         year = match.group('year')
@@ -140,6 +142,9 @@ def getTitleInfo(title):
         logger.info(f"  年份: {year}")
         logger.info(f"  单位: {department}\n")
         return year, department
+    else:
+        # 如果正则匹配失败，记录日志用于调试
+        logger.warning(f"无法解析标题: {title}")
     return None, None
 
 async def replace_image_urls(markdown_text, authToken=""):
@@ -666,7 +671,6 @@ async def periodic_scraping_task():
                 # paperId = '1668003216766'
                 # paperId = '1702961776894'
                 # paperId = '1667998867772'
-                paperId = '16014701670976nu'
                 max_retries = 3
                 success = False
                 last_error = None
@@ -687,8 +691,8 @@ async def periodic_scraping_task():
                 if not success:
                     logger.info(f"Failed to scrape paper ID {paperId} after {max_retries} attempts. Last error: {last_error}")
                 
-                rand = random.randint(1, 20)
-                await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
+                rand = random.randint(1, 10)
+                await asyncio.sleep(30 + rand)  # 每秒钟运行一次任务
                 # break
         # break
 
