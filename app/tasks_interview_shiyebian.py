@@ -667,8 +667,8 @@ async def periodic_scraping_task():
         for paperId in paperIds:
             if paperId not in successful_ids:
                 # paperId = '1668003216766'
-                paperId = '1702961776894'
-                paperId = '1667998867772'
+                # paperId = '1702961776894'
+                # paperId = '1667998867772'
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
                     await scrape(url, paperId)
