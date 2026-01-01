@@ -9,6 +9,7 @@ from app.tasks_interview_shiyebian import periodic_scraping_task  # 导入事业
 # from app.tasks import periodic_scraping_task  # 导入国考爬虫任务
 # from app.tasks_discussion import process_discussion_types # 导入申论类型检查
 from app.logs import get_logger
+from app.database import close_database_connection
 
 
 logger = get_logger(__name__)
@@ -20,44 +21,53 @@ shutdown_event = asyncio.Event()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """FastAPI 生命周期管理"""
+    logger.info("FastAPI application is starting up...")
     
-
-    # 这部分将在应用启动时运行（等同于 startup）
-    # logger.info("Starting up...")
-    print("Starting up...")
+    # 获取当前事件循环
+    loop = asyncio.get_running_loop()
     
-    # 启动爬虫定时任务在后台协程中运行
-    scraping_task = asyncio.create_task(start_scraping_task())
-
-    # 启动爬虫定时任务在后台协程中运行
-    # scraping_task = asyncio.create_task(start_process_types_task())
-
+    # 启动后台任务，确保在当前事件循环中运行
+    scraping_task = loop.create_task(start_scraping_task())
+    
+    yield
+    
+    # 优雅关闭
+    logger.info("FastAPI application is shutting down...")
+    shutdown_event.set()
+    
+    # 等待后台任务完成
     try:
-        yield
-    finally:
-        # 这部分将在应用关闭时运行（等同于 shutdown）
-        logger.info("Shutting down...")
-        
-        # 设置停止信号并取消任务
-        shutdown_event.set()
-        
-        # 取消任务并等待完成
-        if not scraping_task.done():
-            scraping_task.cancel()
-            try:
-                await asyncio.wait_for(scraping_task, timeout=10.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                logger.info("Scraping task cancelled or timed out during shutdown")
-            except Exception as e:
-                logger.error(f"Error during task shutdown: {e}")
+        await asyncio.wait_for(scraping_task, timeout=30)
+    except asyncio.TimeoutError:
+        logger.warning("Background task did not finish within timeout, cancelling...")
+        scraping_task.cancel()
+        try:
+            await scraping_task
+        except asyncio.CancelledError:
+            logger.info("Scraping task cancelled or timed out during shutdown")
+        except Exception as e:
+            logger.error(f"Error during task shutdown: {e}")
+    
+    # 关闭数据库连接
+    try:
+        await close_database_connection()
+        logger.info("Database connection closed")
+    except Exception as e:
+        logger.error(f"Error closing database connection: {e}")
 
 async def start_scraping_task():
     try:
         while not shutdown_event.is_set():
             logger.info("Starting scraping task...")
 
-            # 假设此函数是你实际执行的抓取任务
-            await periodic_scraping_task()  
+            try:
+                # 确保在当前事件循环中执行任务
+                await periodic_scraping_task()  
+            except Exception as e:
+                logger.error(f"Error in periodic scraping task: {e}")
+                # 遇到错误时等待一段时间再重试
+                await asyncio.sleep(10)
             
             # 检查是否应该继续运行
             if shutdown_event.is_set():
@@ -71,6 +81,7 @@ async def start_scraping_task():
                 
     except asyncio.CancelledError:
         logger.info("Scraping task was cancelled")
+        raise
     except Exception as e:
         logger.error(f"Error in scraping task: {e}")
     finally:

@@ -427,9 +427,17 @@ async def fetch_html(url, referer: str = None):
     }
     if referer:
         headers['Referer'] = referer
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers) as response:
-            return await response.text()
+    
+    # 使用超时配置创建会话
+    timeout = aiohttp.ClientTimeout(total=30, connect=10)
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, headers=headers) as response:
+                return await response.text()
+    except asyncio.TimeoutError:
+        raise Exception(f"Timeout occurred while fetching {url}")
+    except Exception as e:
+        raise Exception(f"Error fetching {url}: {str(e)}")
 
 async def getPaperList(url):
     html_content = await fetch_html(url)
@@ -596,7 +604,7 @@ def generate_pageurls(n):
 
 async def periodic_scraping_task():
     try:
-        os.makedirs('interview_papers', exist_ok=True)
+        os.makedirs('papers', exist_ok=True)
         # logger.info(f"Directory '{path}' is created or already exists.")
     except Exception as e:
         logger.info(f"An error occurred while creating the directory: {e}")
@@ -609,10 +617,7 @@ async def periodic_scraping_task():
         successful_ids = load_successful_paper_ids(url)
         for paperId in paperIds:
             if paperId not in successful_ids:
-                # paperId = '1555045649090oma'
-                paperId = '1551918183730sza'
-                # paperId = '1647786976704'
-                # paperId = '1661056209087'
+
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
                     await scrape(url, paperId)
@@ -620,8 +625,7 @@ async def periodic_scraping_task():
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 rand = random.randint(1, 20)
-                break
-                
                 await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
-        break
+                # break
+        # break
 
