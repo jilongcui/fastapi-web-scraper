@@ -186,7 +186,7 @@ async def replace_image_urls(markdown_text, authToken=""):
                         logger.info(f"Request failed with status code: {data}")
                 
     return new_markdown
-async def process_mianshi(paperId, question, explanation):
+async def process_mianshi(province, paperId, question, explanation):
 
     # 解析题目
     try:
@@ -249,7 +249,7 @@ async def process_mianshi(paperId, question, explanation):
                     'year': year,
                     'careerId': '2',
                     'careerName': '事业单位',
-                    'province': department,
+                    'province': province,
                     'departmentId': '0',
                     'department': department,
                     'title': question_title,
@@ -295,7 +295,7 @@ async def process_mianshi(paperId, question, explanation):
                     'year': year,
                     'careerId': '2',
                     'careerName': '事业单位',
-                    'province': department,
+                    'province': province,
                     'departmentId': '0',
                     'department': department,
                     'title': question_title,
@@ -344,7 +344,7 @@ async def process_mianshi(paperId, question, explanation):
                     'year': year,
                     'careerId': '2',
                     'careerName': '事业单位',
-                    'province': department,
+                    'province': province,
                     'departmentId': '0',
                     'department': department,
                     'title': question_title,
@@ -510,7 +510,7 @@ async def getPaperList(url):
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
     return papers
 
-async def scrape(listUrl, paperId):
+async def scrape(listUrl, paperId, province):
     interview_collection=await get_interview_collection()
     questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     question_content = await fetch_html(questionUrl, listUrl)
@@ -521,7 +521,7 @@ async def scrape(listUrl, paperId):
         raise Exception("Failed to fetch paper urls")
     await asyncio.sleep(5)  
     explan_content = await fetch_html(explanUrl, questionUrl)
-    interviews = await process_mianshi(paperId, question_content, explan_content)
+    interviews = await process_mianshi(province, paperId, question_content, explan_content)
     if not interviews:
         raise Exception("Failed to process interview")
     for interview in interviews:
@@ -560,20 +560,6 @@ def generate_pageurls(n):
     
     # 使用列表推导式生成URL列表
     # urls = [f"{base_url}{i}" for i in reversed(range(1, n + 1))]
-    urls2 = [
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%99%E6%B1%9F&index=",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E4%B8%9C",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E4%B8%9C&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B1%9F%E8%8B%8F",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E4%B8%9C",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E4%B8%9C&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%9B%9B%E5%B7%9D",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%A6%8F%E5%BB%BA",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%A6%8F%E5%BB%BA&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E8%A5%BF",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%AE%89%E5%BE%BD",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%B8%8A%E6%B5%B7"
-    ]
 
     urls = [
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=国家",
@@ -661,6 +647,15 @@ async def periodic_scraping_task():
     url_list = generate_pageurls(1)
     for url in url_list:
         logger.info(url)
+    
+        # 提取URL中的省份信息
+        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州" → "贵州"
+        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江&index=2" → "浙江"
+        province = url.split("province=")[-1].split("&")[0] if "province=" in url else "未知省份"
+        # URL解码省份名称
+        province = unquote(province)
+        logger.info(f"正在处理省份: {province}")
+        
         paperIds = await getPaperList(url)
         logger.info(paperIds)
         successful_ids = load_successful_paper_ids(url)
@@ -676,7 +671,7 @@ async def periodic_scraping_task():
                 for attempt in range(max_retries):
                     try:
                         logger.info(f"Scraping paper with ID: {paperId} (attempt {attempt + 1}/{max_retries})")
-                        await scrape(url, paperId)
+                        await scrape(url, paperId, province)
                         save_paper_id(url, paperId)
                         success = True
                         break
