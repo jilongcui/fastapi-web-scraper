@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()  # 加载 .env 文件中的所有内容
 MONGO_USER = os.getenv("MONGO_USER")
 MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
+# MONGO_DETAILS = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@1.117.145.247"
 MONGO_DETAILS = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@1.117.145.247"
 print(MONGO_DETAILS)
 client = AsyncIOMotorClient(MONGO_DETAILS)

@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
 class Interview(BaseModel):
-    typeName: str | None = None
+    careerId: str | None = None
+    careerName: str | None = None
     departmentId: str
     department: str | None = None
     title: str

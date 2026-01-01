@@ -83,14 +83,19 @@ imageUrl = "your_image_url_here"
 
 
 async def getUrls(paperId:str) -> dict:
+    
+    await fetch_html(f"https://www.gkzenti.cn/explain/{paperId}",f"https://www.gkzenti.cn/paper/{paperId}")
+    # await asyncio.sleep(5)
     # 抓取svgStr
     url = "https://www.gkzenti.cn/captcha/math"
     timestamp = int(time.time())
     headers = {
-        'Accept': "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
-        "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
-        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
+        'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        # 'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3AMDGImeHZ40A_1uPchhCOJZPvaBFhSsPw.8FxIWHeT074CEt5E2gQLIPuWiqUPMj4DpzlTgeuBgvU; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1767166016; HMACCOUNT=1B35716B4D00EAB4; cls=%E4%BA%8B%E4%B8%9A%E5%8D%95%E4%BD%8D%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E5%AE%B6; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        
+        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
     }
     headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
     svgStr = await fetch_captcha_svg(url, headers)
@@ -240,6 +245,8 @@ async def process_mianshi(paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
+                    'careerId': '2',
+                    'careerName': '事业单位',
                     'province': department,
                     'departmentId': '0',
                     'department': department,
@@ -284,6 +291,8 @@ async def process_mianshi(paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
+                    'careerId': '2',
+                    'careerName': '事业单位',
                     'province': department,
                     'departmentId': '0',
                     'department': department,
@@ -306,7 +315,7 @@ async def process_mianshi(paperId, question, explanation):
     try:
         logger.info("解析答案解析")
         
-        # logger.info(f"{explanation}")
+        logger.info(f"{explanation}")
         # 从HTML文本创建一个BeautifulSoup对象，使用lxml作为解析器
         soup = BeautifulSoup(explanation, 'html.parser')
 
@@ -370,6 +379,9 @@ async def process_mianshi(paperId, question, explanation):
                         ref_ans_txt=tag.get_text(strip=True)
                         # logger.info(ref_ans_txt)
                         reference_answers.append(ref_ans_txt)
+                    if tag.name == 'footer':
+                        logger.info("----- footer stop ----- ")
+                        break  # 遇到了下一个问题标题，停止
                     #if not tag.find_previous('b', string=lambda x: x and "第" in x and "题解析与参考答案" in x):
                     #    reference_answers.append(tag.get_text(strip=True))
                     # else:
@@ -384,7 +396,7 @@ async def process_mianshi(paperId, question, explanation):
             explanations.append({
                 'analysis': '\n'.join(analysis_points),
                 'mindmapUrl': mind_map_image_url,
-                'sampleAnswer': '\n'.join(reference_answers),
+                'sampleAnswer': '\n'.join(reference_answers).split("\n\n\n欢迎使用公开真题库")[0], #  移除"\n\n\n欢迎使用公开真题库" 以及后面的内容
             })
             index += 1
         # return {"message": "Article processed and data updated successfully."}
@@ -404,11 +416,12 @@ async def process_mianshi(paperId, question, explanation):
 async def fetch_html(url, referer: str = None):
     timestamp = int(time.time())
     headers = {
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         # "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
-        "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
-        "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 QuarkPC/1.10.0.169"
+        # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3AMDGImeHZ40A_1uPchhCOJZPvaBFhSsPw.8FxIWHeT074CEt5E2gQLIPuWiqUPMj4DpzlTgeuBgvU; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1767166016; HMACCOUNT=1B35716B4D00EAB4; cls=%E6%95%99%E5%B8%88%E8%B5%84%E6%A0%BC; province=%E5%B9%BC%E5%84%BF; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
     }
     if referer:
         headers['Referer'] = referer
@@ -437,16 +450,17 @@ async def getPaperList(url):
 
     logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
     return papers
+
 async def scrape(listUrl, paperId):
     interview_collection=await get_interview_collection()
     questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     question_content = await fetch_html(questionUrl, listUrl)
-
+    await asyncio.sleep(5)  # 每秒钟运行一次任务
     questionUrl, explanUrl = await getUrls(paperId)
     logger.info(f"{questionUrl}, {explanUrl}")
     if(questionUrl == None or explanUrl == None):
         raise Exception("Failed to fetch paper urls")
-    
+    await asyncio.sleep(5)  
     explan_content = await fetch_html(explanUrl, questionUrl)
     interviews = await process_mianshi(paperId, question_content, explan_content)
     if not interviews:
@@ -503,41 +517,76 @@ def generate_pageurls(n):
     ]
 
     urls = [
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B9%BF%E5%B7%9E",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B7%B1%E5%9C%B3",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%8C%97%E4%BA%AC",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%8C%97%E4%BA%AC&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%A4%A9%E6%B4%A5",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8C%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8C%97&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8C%97&index=3",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B5%B7%E5%8D%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B2%B3%E5%8D%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B1%9F%E8%A5%BF",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B9%96%E5%8D%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B9%96%E5%8C%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%B9%96%E5%8C%97&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=3",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=4",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%B1%B1%E8%A5%BF&index=5",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%86%85%E8%92%99%E5%8F%A4",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%90%89%E6%9E%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%BB%91%E9%BE%99%E6%B1%9F",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E8%B4%B5%E5%B7%9E",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%87%8D%E5%BA%86",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%99%95%E8%A5%BF",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%99%95%E8%A5%BF&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%94%98%E8%82%83",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E7%94%98%E8%82%83&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%BA%91%E5%8D%97",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E4%BA%91%E5%8D%97&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%96%B0%E7%96%86",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E6%96%B0%E7%96%86&index=2",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E5%AE%81%E5%A4%8F",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%9D%92%E6%B5%B7",
-        "https://www.gkzenti.cn/paper?cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95&province=%E9%9D%92%E6%B5%B7&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=国家",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=国考",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=4",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=6",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江苏",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江苏&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广东",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广东&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广东&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=四川",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=四川&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province广西",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province广西&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=上海",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=上海&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=北京",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=辽宁",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=天津",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河北",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河北&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=海南",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河南",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河南&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河南&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江西",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江西&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖南",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖南&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖北",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖北&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山西",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山西&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山西&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古&index=4",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=吉林",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=吉林&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=黑龙江",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州&index=3",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州&index=4",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=重庆",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=重庆&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=陕西",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=陕西&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=甘肃",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=云南&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=新疆",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=宁夏&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=青海",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=西藏&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=深圳",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=其他",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=三支一扶",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=三支一扶&index=2",
 
     ]
 
@@ -545,7 +594,7 @@ def generate_pageurls(n):
 
 async def periodic_scraping_task():
     try:
-        os.makedirs('papers', exist_ok=True)
+        os.makedirs('interview_papers', exist_ok=True)
         # logger.info(f"Directory '{path}' is created or already exists.")
     except Exception as e:
         logger.info(f"An error occurred while creating the directory: {e}")
@@ -558,8 +607,8 @@ async def periodic_scraping_task():
         successful_ids = load_successful_paper_ids(url)
         for paperId in paperIds:
             if paperId not in successful_ids:
-                paperId = '1551781245901o2n'
-                # paperId = '1627554027915'
+                # paperId = '1555045649090oma'
+                paperId = '1551918183730sza'
                 # paperId = '1647786976704'
                 # paperId = '1661056209087'
                 try:
@@ -569,7 +618,8 @@ async def periodic_scraping_task():
                 except Exception as e:
                     logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
                 rand = random.randint(1, 20)
-                # break
+                break
+                
                 await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
-        # break
+        break
 
