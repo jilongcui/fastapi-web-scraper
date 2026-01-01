@@ -124,7 +124,7 @@ async def getUrls(paperId:str) -> dict:
 import re
 def getTitleInfo(title):
     # 定义正则表达式模式，忽略月份
-    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)面试'
+    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(面试|真题)'
 
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
@@ -258,7 +258,7 @@ async def process_mianshi(paperId, question, explanation):
                     'material': await replace_image_urls(material),
                     'text': await replace_image_urls(question_text)
                 })
-        elif len(soup.find_all('h3')) == 1:
+        elif len(soup.find_all('h3')) == 1 and len(soup.find_all('h2')) >=2:
             # 获取说明
             introduction = soup.find_all('h2')[0].find_next_sibling(text=True).strip()
             logger.info(f"说明: {introduction}")
@@ -289,6 +289,55 @@ async def process_mianshi(paperId, question, explanation):
                     
                 logger.info(f"{question_text}")
                 question_text = re.sub(r"^第\d+题：", "", question_text)
+                question_title = f"{title} 第{index}题"
+                questions.append({
+                    'comment': paperId,
+                    'year': year,
+                    'careerId': '2',
+                    'careerName': '事业单位',
+                    'province': department,
+                    'departmentId': '0',
+                    'department': department,
+                    'title': question_title,
+                    'origin': title,
+                    'introduction': await replace_image_urls(introduction),
+                    'material': await replace_image_urls(material),
+                    'text': await replace_image_urls(question_text)
+                })
+        elif len(soup.find_all('h3')) == 1 and len(soup.find_all('h2')) <=1:
+            # 对于这种结构，题目内容在div内部，需要找到包含题目的div
+            introduction = ""
+            material = ""
+            
+            # 找到包含题目的div或直接查找所有b标签（题目标识）
+            question_tags = soup.find_all('b')
+            
+            for index, question_start_tag in enumerate(question_tags, start=1):
+                # 获取每个题目的内容
+                question_texts = []
+                # 找到b标签后面的p标签内容，直到下一个b标签
+                next_tags = question_start_tag.find_next_siblings(['p', 'b'])
+                
+                for tag in next_tags:
+                    if tag.name == 'b':  # 遇到下一个题目标识，停止
+                        break
+                    question_text = tag.get_text().strip()
+                    if question_text:  # 只添加非空内容
+                        question_texts.append(question_text)
+                        
+                    # 检查是否含有 img 标签
+                    img_tag = tag.find('img')
+                    if img_tag:
+                        # 获取 src
+                        src = img_tag['src']
+                        # 转换为 markdown 格式
+                        image = f"![]({src})"
+                        logger.info(f"image: {image}")
+                        question_texts.append(image)
+
+                question_text = '\n'.join(question_texts)
+                question_text = re.sub(r"^第\d+题：", "", question_text)                       
+                logger.info(f"第{index}题: {question_text}")
                 question_title = f"{title} 第{index}题"
                 questions.append({
                     'comment': paperId,
@@ -336,7 +385,7 @@ async def process_mianshi(paperId, question, explanation):
             # question_title = question_title_tag.get_text(strip=True) if question_title_tag else "无题目文字"
 
             # 提取审题部分紧接着的p标签内容，根据需求调整选择器
-            analysis_points_tags = question_block.find_next_siblings(['p','b'])
+            analysis_points_tags = question_block.find_next_siblings(['p','b', 'br'])
 
             analysis_points = []
             for tag in analysis_points_tags:
@@ -356,8 +405,8 @@ async def process_mianshi(paperId, question, explanation):
                 mind_map_image_url = img_tag['src'] if img_tag else ""
                 mind_map_image_url = await replace_image_urls(mind_map_image_url)
                 logger.info(mind_map_image_url)
-            # 提取参考答案，在<b> 参考答案 </b>或类似标记后采集相关内容。
-            reference_answer_starting_point = question_block.find_next('b', string="参考答案")
+            # 提取参考答案，在<b> 参考答案 </b>或<b> 参考解析 </b>等类似标记后采集相关内容。
+            reference_answer_starting_point = question_block.find_next('b', string=lambda text: text and ("参考答案" in text or "参考解析" in text))
             # reference_answer_starters = question_block.find_all('b', string="参考答案")
 
             reference_answers = []
@@ -617,7 +666,9 @@ async def periodic_scraping_task():
         successful_ids = load_successful_paper_ids(url)
         for paperId in paperIds:
             if paperId not in successful_ids:
-
+                # paperId = '1668003216766'
+                paperId = '1702961776894'
+                paperId = '1667998867772'
                 try:
                     logger.info(f"Scraping paper with ID: {paperId}")
                     await scrape(url, paperId)

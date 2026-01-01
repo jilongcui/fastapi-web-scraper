@@ -249,7 +249,7 @@ async def process_mianshi(paperId, question, explanation):
                     'material': await replace_image_urls(material),
                     'text': await replace_image_urls(question_text)
                 })
-        elif len(soup.find_all('h3')) == 1:
+        elif len(soup.find_all('h3')) == 1 and len(soup.find_all('h2')) >=2:
             # 获取说明
             introduction = soup.find_all('h2')[0].find_next_sibling(text=True).strip()
             logger.info(f"说明: {introduction}")
@@ -267,6 +267,50 @@ async def process_mianshi(paperId, question, explanation):
             # material = soup.find_all('h2')[1].find_next().get_text().strip()
             # logger.info(f"材料: {material}")
             question_tags = soup.find_all('h2')[1].find_next_siblings(['p'])
+            for index, question in enumerate(question_tags, start=1):
+                question_text = question.get_text().strip()
+                # 检查是否含有 img 标签
+                img_tag = question.find('img')
+                if img_tag:
+                    # 获取 src
+                    src = img_tag['src']
+                    # 转换为 markdown 格式
+                    image = f"![]({src})"
+                    question_text = '\n'.join([question_text, image])
+                    
+                logger.info(f"{question_text}")
+                question_text = re.sub(r"^第\d+题：", "", question_text)
+                question_title = f"{title} 第{index}题"
+                questions.append({
+                    'comment': paperId,
+                    'year': year,
+                    'province': department,
+                    'departmentId': '0',
+                    'department': department,
+                    'title': question_title,
+                    'origin': title,
+                    'introduction': await replace_image_urls(introduction),
+                    'material': await replace_image_urls(material),
+                    'text': await replace_image_urls(question_text)
+                })
+        elif len(soup.find_all('h3')) == 1 and len(soup.find_all('h2')) <=1:
+            # 获取说明
+            # introduction = soup.find_all('h2')[0].find_next_sibling(text=True).strip()
+            # logger.info(f"说明: {introduction}")
+            # 提取审题部分紧接着的p标签内容，根据需求调整选择器
+            # introduction_points_tags = soup.find_all('h2')[0].find_next_siblings(['p','h2'])
+
+            # introduction_points = []
+            # for tag in introduction_points_tags:
+            #     if tag.name == 'h2' :
+            #         break
+            #     text_content = tag.get_text(strip=True)
+            #     introduction_points.append(text_content)
+            # material = '\n'.join(introduction_points)
+            # # 获取说明
+            # material = soup.find_all('h2')[1].find_next().get_text().strip()
+            # logger.info(f"材料: {material}")
+            question_tags = soup.find_all('h3')[0].find_next_siblings(['p'])
             for index, question in enumerate(question_tags, start=1):
                 question_text = question.get_text().strip()
                 # 检查是否含有 img 标签
