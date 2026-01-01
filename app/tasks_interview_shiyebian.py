@@ -111,12 +111,12 @@ async def getUrls(paperId:str) -> dict:
 
     # 创建Data URI格式
     data_uri = f'data:image/svg+xml;charset=utf-8;base64,{base64_encoded_svg}'
-    logger.info(f"SvgImage: {data_uri}")
+    # logger.info(f"SvgImage: {data_uri}")
     # 假设image2Answer是在其他地方定义的函数，用于处理encoded data和authentication token。
     data = await image2Code(data_uri)
     code = data.get("answer")
     code = int(code)
-    logger.info(f"code: {code}")
+    # logger.info(f"code: {code}")
     questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
     explanUrl = f"https://www.gkzenti.cn/explain/{paperId}?mathcode={code}"
     return questionUrl, explanUrl
