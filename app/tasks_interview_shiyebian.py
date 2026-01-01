@@ -669,12 +669,26 @@ async def periodic_scraping_task():
                 # paperId = '1668003216766'
                 # paperId = '1702961776894'
                 # paperId = '1667998867772'
-                try:
-                    logger.info(f"Scraping paper with ID: {paperId}")
-                    await scrape(url, paperId)
-                    save_paper_id(url, paperId)
-                except Exception as e:
-                    logger.info(f"Error occurred while scraping paper with ID {paperId}: {e}")
+                max_retries = 3
+                success = False
+                last_error = None
+                
+                for attempt in range(max_retries):
+                    try:
+                        logger.info(f"Scraping paper with ID: {paperId} (attempt {attempt + 1}/{max_retries})")
+                        await scrape(url, paperId)
+                        save_paper_id(url, paperId)
+                        success = True
+                        break
+                    except Exception as e:
+                        last_error = e
+                        logger.info(f"Attempt {attempt + 1} failed for paper ID {paperId}: {e}")
+                        if attempt < max_retries - 1:  # 不是最后一次尝试
+                            await asyncio.sleep(5)  # 重试前等待5秒
+                
+                if not success:
+                    logger.info(f"Failed to scrape paper ID {paperId} after {max_retries} attempts. Last error: {last_error}")
+                
                 rand = random.randint(1, 20)
                 await asyncio.sleep(50 + rand)  # 每秒钟运行一次任务
                 # break
