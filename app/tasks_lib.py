@@ -116,7 +116,7 @@ async def getUrls(paperId:str) -> dict:
         
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
     }
-    logger.info(f"Headers: {headers}")
+    # logger.info(f"Headers: {headers}")
     headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
     svgStr = await fetch_captcha_svg(url, headers)
     # 将转义字符移除
@@ -393,7 +393,7 @@ async def process_mianshi(province, paperId, question, explanation):
     try:
         logger.info("解析答案解析")
         
-        logger.info(f"{explanation}")
+        # logger.info(f"{explanation}")
         # 从HTML文本创建一个BeautifulSoup对象，使用lxml作为解析器
         soup = BeautifulSoup(explanation, 'html.parser')
 
