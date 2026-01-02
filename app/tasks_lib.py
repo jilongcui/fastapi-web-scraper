@@ -2,101 +2,216 @@
 
 import aiohttp
 import asyncio
+import time
 import random
 import os
+import base64
+import logging
+import sys
 from bs4 import BeautifulSoup
 from urllib.parse import unquote
 from app.logs import get_logger
 from fastapi import FastAPI, HTTPException, Depends
 from models.user import User  # 从models导入用户模型
 from app.database import get_interview_collection  # 从app导入数据库函数
-from app.tasks_lib import fetch_html, getPaperList, fetch_captcha_svg, image2Code, getUrls
-from app.tasks_lib import getTitleInfo, replace_image_urls,save_paper_id,load_successful_paper_ids
-from app.tasks_lib import setup_logger
 
-# 为当前模块创建专用logger
-logger = setup_logger(__name__)
+# 获取一个特定的 logger 实例
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-# 获取保存目录
-save_directory = 'papers'
+# StreamHandler für die Konsole
+stream_handler = logging.StreamHandler(sys.stdout)
+log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%(threadName)s: %(thread)d] [%(levelname)s] %(name)s: %(message)s")
+stream_handler.setFormatter(log_formatter)
+logger.addHandler(stream_handler)
+
+file_handler = logging.FileHandler('app.log')
+file_handler.setFormatter(log_formatter)
+logger.addHandler(file_handler)
+
+def setup_logger(name):
+    """为指定模块创建logger配置"""
+    module_logger = logging.getLogger(name)
+    module_logger.setLevel(logging.DEBUG)
+    
+    # 检查是否已经添加了handlers，避免重复添加
+    if not module_logger.handlers:
+        # StreamHandler für die Konsole
+        stream_handler = logging.StreamHandler(sys.stdout)
+        log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%(threadName)s: %(thread)d] [%(levelname)s] %(name)s: %(message)s")
+        stream_handler.setFormatter(log_formatter)
+        module_logger.addHandler(stream_handler)
+        
+        file_handler = logging.FileHandler('app.log')
+        file_handler.setFormatter(log_formatter)
+        module_logger.addHandler(file_handler)
+    
+    return module_logger
+
+async def fetch_captcha_svg(url, headers):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            if response.status == 200:
+                svg_data = await response.text()
+                # logger.info(f"Fetched SVG: {svg_data}")  # 打印前100个字符以示例
+                return svg_data
+            else:
+                logger.info(f"Failed to fetch SVG, status code: {response.status}")
+                return None
+            
+# def image2Code2(imageUrl):
+#     api_endpoint =f"https://mianshi.xiaohe.biz/api/interview-set/svg2Answer"
+#     headers = {
+#         # 'Authencation': f'{authToken}',
+#         'Content-Type': 'application/json'
+#     }
+#     response = requests.post(api_endpoint, json={"imageUrl": imageUrl},headers=headers)
+#     answer = None;
+#     code = None
+#     if (response.status_code == 200 or response.status_code == 201):
+#         code = response.json().get("code", {})
+#         if code == 200:
+#             data = response.json().get("data", {})
+#             answer = data.get("answer")
+
+#     return data
+
+async def image2Code(imageUrl):
+    api_endpoint = "https://mian.xiaohe.biz/api/interview-set/svg2Answer"
+    headers = {
+        # 'Authentication': f'{authToken}',  # 确保替换为你的真实认证令牌
+        'Content-Type': 'application/json'
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
+            data = {}
+            if response.status in (200, 201):
+                # 如果返回状态码是200或201，处理响应内容
+                logger.info("Request successful")
+                data = await response.json()  # 假设服务器返回JSON格式数据
+                code = data.get("code", {})
+                if code == 200:
+                    data = data.get("data", {})
+                else:
+                    logger.info(f"Request failed with status code: {response.status}")
+            return data
+# 定义API端点和图像URL
+
+imageUrl = "your_image_url_here"
 
 
-def get_pageurls():
-    urls = [
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=国家",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=国考",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=4",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山东&index=6",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江苏",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江苏&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广东",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广东&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广东&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=四川",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=四川&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province广西",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province广西&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=上海",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=上海&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=北京",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=辽宁",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=天津",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河北",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河北&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=海南",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河南",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河南&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=河南&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江西",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=江西&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖南",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖南&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖北",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=湖北&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山西",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山西&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=山西&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=内蒙古&index=4",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=吉林",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=吉林&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=黑龙江",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州&index=4",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=重庆",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=重庆&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=陕西",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=陕西&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=甘肃",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=云南&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=新疆",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=宁夏&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=青海",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=西藏&index=2",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=深圳",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=其他",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=三支一扶",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=三支一扶&index=2",
+async def getUrls(paperId:str) -> dict:
+    
+    # await fetch_html(f"https://www.gkzenti.cn/explain/{paperId}",f"https://www.gkzenti.cn/paper/{paperId}")
+    # await asyncio.sleep(5)
+    # 抓取svgStr
+    url = "https://www.gkzenti.cn/captcha/math"
+    timestamp = int(time.time())
+    headers = {
+        'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        # 'Cookie': "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3AMDGImeHZ40A_1uPchhCOJZPvaBFhSsPw.8FxIWHeT074CEt5E2gQLIPuWiqUPMj4DpzlTgeuBgvU; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1767166016; HMACCOUNT=1B35716B4D00EAB4; cls=%E4%BA%8B%E4%B8%9A%E5%8D%95%E4%BD%8D%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E5%AE%B6; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        
+        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+    }
+    logger.info(f"Headers: {headers}")
+    headers['Referer'] = f"https://www.gkzenti.cn/paper/{paperId}"
+    svgStr = await fetch_captcha_svg(url, headers)
+    # 将转义字符移除
+    svg_string = svgStr.replace('\"', '"')
 
-    ]
+    # 将修正后的SVG字符串编码为UTF-8字节
+    svg_bytes = svg_string.encode('utf-8')
+    
+    # 对字节进行Base64编码
+    base64_encoded_svg = base64.b64encode(svg_bytes).decode('utf-8')
 
-    return urls
+    # 创建Data URI格式
+    data_uri = f'data:image/svg+xml;charset=utf-8;base64,{base64_encoded_svg}'
+    # logger.info(f"SvgImage: {data_uri}")
+    # 假设image2Answer是在其他地方定义的函数，用于处理encoded data和authentication token。
+    data = await image2Code(data_uri)
+    code = data.get("answer")
+    code = int(code)
+    # logger.info(f"code: {code}")
+    questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
+    explanUrl = f"https://www.gkzenti.cn/explain/{paperId}?mathcode={code}"
+    return questionUrl, explanUrl
+
+import re
+def getTitleInfo(title):
+    # 定义正则表达式模式，忽略月份
+    # 2020年7月11日浙江湖州南浔区医疗卫生单位公开招聘事业编制人员面试题
+    # 2016年6月17日浙江省金华市面试真题
+    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(?:面试真题|面试题?|真题)?\s*$'
+
+    # 解析每个主题
+    title = title.strip().replace("上午", "").replace("下午", "")
+    title = title.replace("（网友回忆版）", "")
+    # 自动去除所有（xxx）格式的内容
+    # title = re.sub(r'（[^）]*）', '', title)
+    match = re.search(pattern, title)
+    if match:
+        year = match.group('year')
+        department = match.group('department')
+        
+        logger.info(f"主题: {title}")
+        logger.info(f"  年份: {year}")
+        logger.info(f"  单位: {department}\n")
+        return year, department, title
+    else:
+        # 如果正则匹配失败，记录日志用于调试
+        logger.warning(f"无法解析标题: {title}")
+    return None, None, None
+
+async def replace_image_urls(markdown_text, authToken=""):
+    # 定义正则表达式来匹配 !img[](url)
+    # pattern = r'!\[\]\(([^)]+)\)'
+    # pattern = r"//upload\.gkzenti\.cn/[\w\d]+/[\w\d]+\.(png|jpg)"
+    pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(?:png|jpg)"
+    # pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(png|jpg)"
+    api_endpoint ="https://mian.xiaohe.biz/api/common/uploadByUrl"
+    headers = {
+        # 'Authorization': f'Bearer {authToken}',
+        'Content-Type': 'application/json'
+    }
+    # 查找所有匹配项
+    matches = re.findall(pattern, markdown_text)
+    # matches = [
+    #     markdown_text
+    # ]
+    # logger.info(matches)
+    # logger.info(f"Found {len(matches)} image URLs:")
+    new_markdown = markdown_text
+    
+    for url in matches:
+        # new_markdown += url
+        # 调用 POST 接口获取新 image URL
+        if(url.count('(')>url.count(')')):
+            url = url + ')'
+        imageUrl = "https:"+url
+        # logger.info(f"imageUrl: {imageUrl}")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
+                data = {}
+                if response.status in (200, 201):
+                    # 如果返回状态码是200或201，处理响应内容
+                    data = await response.json()  # 假设服务器返回JSON格式数据
+                    code = data.get("code", {})
+                    # logger.info(f"Request response {data}")
+                    if code == 200:
+                        data = data.get("data", {})
+                        new_url = data.get("location")
+                        # 用新 URL 替换旧 URL
+                        new_markdown = new_markdown.replace(url, new_url)
+                        # logger.info(f"new_markdown: {new_markdown}")
+                        return new_markdown
+                    else:
+                        logger.info(f"Request failed with status code: {data}")
+                
+    return new_markdown
 
 async def process_mianshi(province, paperId, question, explanation):
 
@@ -107,8 +222,8 @@ async def process_mianshi(province, paperId, question, explanation):
 
         # 获取试卷名称
         title = soup.find('h3', align='center').string
-        logger.info(f"试卷名称: {title}")
-        year, department = getTitleInfo(title)
+        logger.info(f"原始试卷名称: {title}")
+        year, department, title = getTitleInfo(title)
         logger.info(f"试卷名称: {title}")
         questions = []
 
@@ -376,11 +491,56 @@ async def process_mianshi(province, paperId, question, explanation):
     logger.info(interviews)
     return interviews
 
+async def fetch_html(url, referer: str = None):
+    timestamp = int(time.time())
+    headers = {
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        # "Cookie": "connect.sid=s%3AFIZCYvlp4vhfk4l5eEq9rr74JCd2an67.uP2a3PFUS8LNC6LVfVaEu2XoG27NIIymPDducAD%2BM48; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1732881600; HMACCOUNT=1A150266D1AAAB30; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; province=%E5%9B%BD%E8%80%83; Hm_lpvt_db5c56a1da081947699f2e5bece459c7=1734586863",
+        # "Cookie": f"connect.sid=s%3AasmGihKKO8OTgnFL2y_LgZmYVtts86x6.bbnOMAmmxvMpdGk7ctgHBdB7W4CTwE47z0Ku0x9e9xA; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1734590397; HMACCOUNT=96C839E210B265AA; province=%E5%9B%BD%E8%80%83; cls=%E5%85%AC%E5%8A%A1%E5%91%98%E9%9D%A2%E8%AF%95; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "Cookie": f"connect.sid=s%3AMDGImeHZ40A_1uPchhCOJZPvaBFhSsPw.8FxIWHeT074CEt5E2gQLIPuWiqUPMj4DpzlTgeuBgvU; Hm_lvt_db5c56a1da081947699f2e5bece459c7=1767166016; HMACCOUNT=1B35716B4D00EAB4; cls=%E6%95%99%E5%B8%88%E8%B5%84%E6%A0%BC; province=%E5%B9%BC%E5%84%BF; Hm_lpvt_db5c56a1da081947699f2e5bece459c7={timestamp}",
+        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
+    }
+    if referer:
+        headers['Referer'] = referer
+    
+    # 使用超时配置创建会话
+    timeout = aiohttp.ClientTimeout(total=30, connect=10)
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, headers=headers) as response:
+                return await response.text()
+    except asyncio.TimeoutError:
+        raise Exception(f"Timeout occurred while fetching {url}")
+    except Exception as e:
+        raise Exception(f"Error fetching {url}: {str(e)}")
 
-async def scrape_process(listUrl, paperId, province):
+async def getPaperList(url):
+    html_content = await fetch_html(url)
+    # 使用BeautifulSoup解析HTML内容
+    soup = BeautifulSoup(html_content, 'lxml')
+
+    # 找到ID为paperlist的表格
+    table = soup.find('table', {'id': 'paperlist'})
+
+    # 初始化结果列表
+    papers = []
+
+    # 在指定表格中查找所有符合条件的链接标签<a>，并提取其中的数字部分
+    for link in table.find_all('a', href=True):
+        # 检查链接是否以/paper/开头以确保匹配设计要求
+        if link['href'].startswith('/paper/'):
+            # 提取所有以/paper/开头的链接中的数字部分
+            number = link['href'].split('/')[-1]
+            papers.append(number)
+
+    logger.info(papers)  # 输出结果 ['1727924080287', '1727924080186']
+    return papers
+
+async def scrape(referUrl, paperId, province):
     interview_collection=await get_interview_collection()
     questionUrl = f"https://www.gkzenti.cn/paper/{paperId}"
-    question_content = await fetch_html(questionUrl, listUrl)
+    question_content = await fetch_html(questionUrl, referUrl)
     await asyncio.sleep(5)  # 每秒钟运行一次任务
     questionUrl, explanUrl = await getUrls(paperId)
     logger.info(f"{questionUrl}, {explanUrl}")
@@ -397,56 +557,31 @@ async def scrape_process(listUrl, paperId, province):
         created_interview = await interview_collection.find_one({"_id": new_interview.inserted_id})
         # logger.info(f"Created interview: {created_interview}")
 
+def save_paper_id(url, paper_id, directory="papers"):
 
-async def periodic_scraping_task():
-    try:
-        os.makedirs(save_directory, exist_ok=True)
-        # logger.info(f"Directory '{path}' is created or already exists.")
-    except Exception as e:
-        logger.info(f"An error occurred while creating the directory: {e}")
+    path = url.split('?')[-1]
+    path = unquote(path)
+    path = path.replace('cls=', '')
+    path = path.replace('=', '')
+    path = path.replace('&', '')
 
-    url_list = get_pageurls()
-    for url in url_list:
-        logger.info(url)
+    fileName = os.path.join(directory, path + ".txt")
     
-        # 提取URL中的省份信息
-        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位面试&province=贵州" → "贵州"
-        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位面试&province=浙江&index=2" → "浙江"
-        province = url.split("province=")[-1].split("&")[0] if "province=" in url else "未知省份"
-        # URL解码省份名称
-        province = unquote(province)
-        logger.info(f"正在处理省份: {province}")
-        
-        paperIds = await getPaperList(url)
-        logger.info(paperIds)
-        successful_ids = load_successful_paper_ids(url, save_directory)
-        for paperId in paperIds:
-            if paperId not in successful_ids:
-                # paperId = '1668003216766'
-                # paperId = '1702961776894'
-                # paperId = '1667998867772'
-                max_retries = 3
-                success = False
-                last_error = None
-                
-                for attempt in range(max_retries):
-                    try:
-                        logger.info(f"Scraping paper with ID: {paperId} (attempt {attempt + 1}/{max_retries})")
-                        await scrape_process(url, paperId, province)
-                        save_paper_id(url, paperId, save_directory)
-                        success = True
-                        break
-                    except Exception as e:
-                        last_error = e
-                        logger.info(f"Attempt {attempt + 1} failed for paper ID {paperId}: {e}")
-                        if attempt < max_retries - 1:  # 不是最后一次尝试
-                            await asyncio.sleep(5)  # 重试前等待5秒
-                
-                if not success:
-                    logger.info(f"Failed to scrape paper ID {paperId} after {max_retries} attempts. Last error: {last_error}")
-                
-                rand = random.randint(1, 10)
-                await asyncio.sleep(30 + rand)  # 每秒钟运行一次任务
-                # break
-        # break
+    with open(fileName, "a") as file:
+        file.write(f"{paper_id}\n")
+
+def load_successful_paper_ids(url, directory="papers"):
+    path = url.split('?')[-1]
+    path = unquote(path)
+    path = path.replace('cls=', '')
+    path = path.replace('=', '')
+    path = path.replace('&', '')
+    fileName = os.path.join(directory, path + ".txt")
+    try:
+        with open(fileName) as file:
+            return set(file.read().splitlines())
+    except FileNotFoundError:
+        return set()
+    
+
 
