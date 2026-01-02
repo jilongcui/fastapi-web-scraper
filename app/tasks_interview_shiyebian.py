@@ -1,5 +1,6 @@
 # tasks.py
 
+import re
 import aiohttp
 import asyncio
 import random
@@ -10,7 +11,7 @@ from app.logs import get_logger
 from fastapi import FastAPI, HTTPException, Depends
 from models.user import User  # 从models导入用户模型
 from app.database import get_interview_collection  # 从app导入数据库函数
-from app.tasks_lib import fetch_html, getPaperList, fetch_captcha_svg, image2Code, getUrls
+from app.tasks_lib import fetch_html, getPaperList , getUrls
 from app.tasks_lib import getTitleInfo, replace_image_urls,save_paper_id,load_successful_paper_ids
 from app.tasks_lib import setup_logger
 
@@ -278,7 +279,7 @@ async def process_mianshi(province, paperId, question, explanation):
     try:
         logger.info("解析答案解析")
         
-        logger.info(f"{explanation}")
+        # logger.info(f"{explanation}")
         # 从HTML文本创建一个BeautifulSoup对象，使用lxml作为解析器
         soup = BeautifulSoup(explanation, 'html.parser')
 
