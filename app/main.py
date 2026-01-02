@@ -64,9 +64,9 @@ async def start_scraping_task():
 
             try:
                 # 确保在当前事件循环中执行任务
-                # await periodic_scraping_interview_task()  
+                await periodic_scraping_interview_task()  
                 
-                await periodic_scraping_question_task()
+                # await periodic_scraping_question_task()
             except Exception as e:
                 logger.error(f"Error in periodic scraping task: {e}")
                 # 遇到错误时等待一段时间再重试
