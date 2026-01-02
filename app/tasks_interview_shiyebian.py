@@ -44,8 +44,8 @@ def get_pageurls():
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建",
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建&index=2",
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=福建&index=3",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province广西",
-        "https://www.gkzenti.cn/paper?cls=事业单位面试&province广西&index=2",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广西",
+        "https://www.gkzenti.cn/paper?cls=事业单位面试&province=广西&index=2",
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽",
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽&index=2",
         "https://www.gkzenti.cn/paper?cls=事业单位面试&province=安徽&index=3",
@@ -399,7 +399,7 @@ async def scrape_process(listUrl, paperId, province):
         # logger.info(f"Created interview: {created_interview}")
 
 
-async def periodic_scraping_task():
+async def periodic_scraping_interview_task():
     try:
         os.makedirs(save_directory, exist_ok=True)
         # logger.info(f"Directory '{path}' is created or already exists.")

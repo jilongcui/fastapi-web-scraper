@@ -42,6 +42,10 @@ async def get_discussion_collection():
     database = await get_database()
     return database.get_collection('discussions')
 
+async def get_question_collection():
+    database = await get_database()
+    return database.get_collection('questions')
+
 async def close_database_connection():
     """关闭数据库连接"""
     global _client, _database
