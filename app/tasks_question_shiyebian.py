@@ -336,7 +336,7 @@ async def scrape_process(listUrl, paperId, province):
         # logger.info(f"Created question: {created_question}")
 
 
-async def periodic_scraping_questitask():
+async def periodic_scraping_question_task():
     try:
         os.makedirs(save_directory, exist_ok=True)
         # logger.info(f"Directory '{path}' is created or already exists.")
