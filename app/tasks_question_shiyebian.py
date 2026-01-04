@@ -21,6 +21,27 @@ logger = setup_logger(__name__)
 # 获取保存目录
 save_directory = 'papers'
 
+# 本题目类型包括：1：常识判断；2：数量关系；3：言语理解与表达；4：判断推理；5：资料分析；6：政治理论；
+
+CONTENT_TYPE = { 
+      '1': '常识判断',
+      '2': '言语',
+      '3': '数量',
+      '4': '判断推理',
+      '5': '资料分析',
+      '6': '政治理论',
+      '7': '策略选择'
+}
+
+CONTENT_TYPE2 = { 
+      '1': '常识',
+      '2': '表达',
+      '3': '数量',
+      '4': '推理',
+      '5': '资料',
+      '6': '政治',
+      '7': '策略'
+}
 
 def get_pageurls():
     urls = [
@@ -151,6 +172,20 @@ async def process_question(province, paperId, question, explanation):
                     question_text = "\n".join(question_texts)
                     question_title = f"{title} 第{index}题"
                     
+                    # 根据CONTENT_TYPE定义的内容，把TypeName映射为对应的数字类型
+                    type_number = "0"  # 默认类型编号
+                    for key, value in CONTENT_TYPE.items():
+                        # 并不完全相等，比如value可能是“言语理解”，current_typeName可能是“言语理解与表达”
+                        if value in current_typeName:
+                            type_number = key
+                            break
+                    if type_number == "0":
+                        for key, value in CONTENT_TYPE2.items():
+                        # 并不完全相等，比如value可能是“言语理解”，current_typeName可能是“言语理解与表达”
+                            if value in current_typeName:
+                                type_number = key
+                                break
+                    
                     questions.append({
                         'comment': paperId,
                         'year': year,
@@ -164,6 +199,7 @@ async def process_question(province, paperId, question, explanation):
                         'index': index,
                         'material': await replace_image_urls(current_material),
                         'text': await replace_image_urls(question_text),
+                        'typeId': type_number,
                         'typeName': current_typeName,
                         'options': options_dict
                     })
@@ -311,6 +347,7 @@ async def process_question(province, paperId, question, explanation):
     count = min(len(questions), len(explanations))
     for i in range(count):
         merged_entry = {**questions[i], **explanations[i]}
+        interviews.append(merged_entry)
     logger.info(interviews)
     return interviews
 

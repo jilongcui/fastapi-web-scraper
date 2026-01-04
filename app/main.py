@@ -69,9 +69,9 @@ async def start_scraping_task():
                 
                 # await process_discussion_types() 
                 
-                await process_interview_types() 
+                # await process_interview_types() 
                 
-                # await periodic_scraping_question_task()
+                await periodic_scraping_question_task()
             except Exception as e:
                 logger.error(f"Error in periodic scraping task: {e}")
                 # 遇到错误时等待一段时间再重试
