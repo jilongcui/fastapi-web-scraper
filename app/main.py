@@ -4,7 +4,8 @@ import uvicorn
 import signal
 from contextlib import asynccontextmanager
 # from app.tasks_interview import periodic_scraping_task  # 导入省考爬虫任务
-from app.tasks_interview_shiyebian import periodic_scraping_interview_task  # 导入事业单位面试爬虫任务
+from app.tasks_discussion import process_discussion_types
+from app.tasks_interview_shiyebian import periodic_scraping_interview_task, process_interview_types  # 导入事业单位面试爬虫任务
 # from app.tasks_discussion import periodic_scraping_task  # 导入申论爬虫任务
 # from app.tasks import periodic_scraping_task  # 导入国考爬虫任务
 # from app.tasks_discussion import process_discussion_types # 导入申论类型检查
@@ -64,7 +65,11 @@ async def start_scraping_task():
 
             try:
                 # 确保在当前事件循环中执行任务
-                await periodic_scraping_interview_task()  
+                # await periodic_scraping_interview_task()  
+                
+                # await process_discussion_types() 
+                
+                await process_interview_types() 
                 
                 # await periodic_scraping_question_task()
             except Exception as e:

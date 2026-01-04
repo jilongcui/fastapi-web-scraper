@@ -451,3 +451,57 @@ async def periodic_scraping_interview_task():
                 # break
         # break
 
+
+
+async def fetch_from_external_service(record_id):
+    url = f"https://mian.xiaohe.biz/api/v2/sys/interviews/checkTypes/{record_id}"
+    headers = {
+        # 'Authentication': f'{authToken}',  # 确保替换为你的真实认证令牌
+        'Content-Type': 'application/json'
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers) as response:
+            return await response.json()
+
+async def process_interview_types():
+    collection = await get_interview_collection()
+     
+    # 1. 只查询未处理过的数据 (typeChecked 不为 True)
+    # 2. 直接使用 cursor 迭代，避免一次性加载全部数据到内存
+    cursor = collection.find({"typeChecked": {"$ne": True}})
+    
+    processed_count = 0
+    try:
+        async for interview in cursor:
+            record_id = interview.get("_id")
+            if record_id:
+                try:
+                    logger.info(f"正在处理面试记录 ID: {record_id}")
+                    result = await fetch_from_external_service(record_id)
+                    
+                    # 3. 记录进度：处理成功后在数据库中标记
+                    if result:
+                        await collection.update_one(
+                            {"_id": record_id},
+                            {"$set": {"typeChecked": True}}
+                        )
+                        logger.info(f"记录 {record_id} 处理完成并已标记进度")
+                    
+                    processed_count += 1
+                    
+                    # 4. 增加随机延迟，防止请求频率过高
+                    await asyncio.sleep(random.uniform(0.5, 1.5))
+                    
+                    # 每处理 10 条打印一次汇总
+                    if processed_count % 10 == 0:
+                        logger.info(f"本轮已处理 {processed_count} 条面试记录")
+                        
+                except Exception as e:
+                    logger.error(f"处理记录 {record_id} 时出错: {e}")
+                    await asyncio.sleep(5)  # 出错后等待较长时间再继续
+                    
+    except Exception as e:
+        logger.error(f"查询数据库时出错: {e}")
+        # --- 建议添加以下延迟逻辑 ---
+        # 随机延迟 0.1 到 0.5 秒
+        await asyncio.sleep(random.uniform(0.1, 0.5))
