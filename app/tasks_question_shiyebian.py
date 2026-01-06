@@ -197,11 +197,11 @@ async def process_question(province, paperId, question, explanation):
                     question_title = f"{title} 第{index}题"
                     
                     # 打印question_text原始内容
-                    logger.info(f"Question Text (raw): {question_text}")
+                    # logger.info(f"Question Text (raw): {question_text}")
                     
                     # 打印替换之后的内容
                     
-                    logger.info(f"Question Text (replace): {await replace_image_urls(question_text)}")
+                    # logger.info(f"Question Text (replace): {await replace_image_urls(question_text)}")
                     
                     # 根据CONTENT_TYPE定义的内容，把TypeName映射为对应的数字类型
                     type_number = "0"  # 默认类型编号
@@ -436,7 +436,7 @@ async def periodic_scraping_question_task():
                 # paperId = '1668003216766'
                 # paperId = '1702961776894'
                 # paperId = '1667998867772'
-                paperId = '1746428264151'
+                # paperId = '1746428264151'
                 max_retries = 3
                 success = False
                 last_error = None
