@@ -160,7 +160,7 @@ async def process_mianshi(province, paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'careerId': '2',
+                    'careerType': '2',
                     'careerName': '事业单位',
                     'province': province,
                     'departmentId': '0',
@@ -206,7 +206,7 @@ async def process_mianshi(province, paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'careerId': '2',
+                    'careerType': '2',
                     'careerName': '事业单位',
                     'province': province,
                     'departmentId': '0',
@@ -255,7 +255,7 @@ async def process_mianshi(province, paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'careerId': '2',
+                    'careerType': '2',
                     'careerName': '事业单位',
                     'province': province,
                     'departmentId': '0',

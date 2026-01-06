@@ -169,7 +169,7 @@ def getTitleInfo(title):
 async def replace_image_urls(markdown_text, authToken=""):
     # 定义正则表达式来匹配 //upload.gkzenti.cn/路径/文件名 (后缀可选)
     # pattern = r"//upload\.gkzenti\.cn/\w+/\w+(?:\.[\w]+)?"
-    pattern = r"//upload\.gkzenti\.cn/[a-zA-Z0-9_./-]+"
+    pattern = r"(?:https?:)?//upload\.gkzenti\.cn/[a-zA-Z0-9_./-]+"
     
     # 移除 \xa0 等可能导致 logging 报错的字符
     if markdown_text:
@@ -181,30 +181,58 @@ async def replace_image_urls(markdown_text, authToken=""):
         'Content-Type': 'application/json'
     }
     
-    # 查找所有匹配项
+    # 查找所有匹配项（保持出现顺序，后续会做去重）
     matches = re.findall(pattern, markdown_text)
     if not matches:
         return markdown_text
         
     new_markdown = markdown_text
+
+    # 去重，避免同一个图片重复上传
+    seen = set()
+    unique_matches = []
+    for m in matches:
+        if m not in seen:
+            seen.add(m)
+            unique_matches.append(m)
+
+    # 打印找到的所有匹配项
+    logger.info(f"Found {len(unique_matches)} unique image URLs to process.")
     
-    for url in matches:
-        if(url.count('(')>url.count(')')):
-            url = url + ')'
-        imageUrl = "https:"+url
-        async with aiohttp.ClientSession() as session:
-            async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
-                data = {}
-                if response.status in (200, 201):
+    # 缓存上传结果，避免重复请求
+    url_map = {}
+
+    async with aiohttp.ClientSession() as session:
+        for raw in unique_matches:
+            # 标准化成完整的 https URL
+            if raw.startswith('http://') or raw.startswith('https://'):
+                imageUrl = raw
+            else:
+                imageUrl = 'https:' + raw
+
+            try:
+                async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
+                    if response.status not in (200, 201):
+                        continue
                     data = await response.json()
-                    code = data.get("code", {})
-                    if code == 200:
-                        data = data.get("data", {})
-                        new_url = data.get("location")
-                        new_markdown = new_markdown.replace(url, new_url)
-                    else:
+                    if data.get('code') != 200:
                         logger.info(f"Request failed with status code: {data}")
-                
+                        continue
+                    new_url = (data.get('data') or {}).get('location')
+                    if new_url:
+                        url_map[raw] = new_url
+            except Exception as e:
+                logger.info(f"uploadByUrl failed for {imageUrl}: {e}")
+
+    # 打印url_map内容
+    logger.info(f"URL map: {url_map}")
+    
+    # 批量替换：把原始匹配串（可能是 // 或 https://）替换成新地址
+    for raw, new_url in url_map.items():
+        new_markdown = new_markdown.replace(raw, new_url)
+    
+    # 打印替换后的markdown内容
+    logger.info(f"Replaced markdown content: {new_markdown}")
     return new_markdown
 
 async def process_mianshi(province, paperId, question, explanation):
@@ -268,7 +296,7 @@ async def process_mianshi(province, paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'careerId': '2',
+                    'careerType': '2',
                     'careerName': '事业单位',
                     'province': province,
                     'departmentId': '0',
@@ -314,7 +342,7 @@ async def process_mianshi(province, paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'careerId': '2',
+                    'careerType': '2',
                     'careerName': '事业单位',
                     'province': province,
                     'departmentId': '0',
@@ -363,7 +391,7 @@ async def process_mianshi(province, paperId, question, explanation):
                 questions.append({
                     'comment': paperId,
                     'year': year,
-                    'careerId': '2',
+                    'careerType': '2',
                     'careerName': '事业单位',
                     'province': province,
                     'departmentId': '0',

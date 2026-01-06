@@ -5,7 +5,7 @@ import aiohttp
 import asyncio
 import random
 import os
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from urllib.parse import unquote
 from app.logs import get_logger
 from fastapi import FastAPI, HTTPException, Depends
@@ -81,12 +81,50 @@ def get_pageurls():
 
     return urls
 
+def _collect_markdown_parts(node):
+    parts = []
+    if node is None:
+        return parts
+
+    if isinstance(node, NavigableString):
+        text = str(node)
+        if text:
+            parts.append(text)
+        return parts
+
+    name = getattr(node, 'name', None)
+    if name == 'img':
+        src = node.get('src')
+        if src and src.startswith('//'):
+            src = 'https:' + src
+        if src:
+            parts.append(f"![]({src})")
+        # Some pages (or non-HTML5 parsers) can produce a tree like <img>...<img/>...</img>.
+        # If we return early here, nested images/text get dropped.
+        for child in getattr(node, 'children', []):
+            parts.extend(_collect_markdown_parts(child))
+        return parts
+    if name == 'br':
+        parts.append("\n")
+        return parts
+
+    for child in getattr(node, 'children', []):
+        parts.extend(_collect_markdown_parts(child))
+    return parts
+
+def node_to_markdown(node):
+    text = ''.join(_collect_markdown_parts(node))
+    text = text.replace('\xa0', ' ')
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
 async def process_question(province, paperId, question, explanation):
 
     # 解析题目
     try:
         # 创建BeautifulSoup对象
-        soup = BeautifulSoup(question, 'html.parser')
+        # Use lxml for more browser-consistent HTML parsing.
+        soup = BeautifulSoup(question, 'lxml')
 
         # 获取试卷名称
         title_tag = soup.find('h3', align='center')
@@ -127,18 +165,21 @@ async def process_question(province, paperId, question, explanation):
                         if 'sub2title' in col.get('class', []):
                             continue
                         for child in col.children:
-                            if child.name == 'p':
-                                p_text = child.get_text(strip=True).replace('\xa0', ' ')
-                                img = child.find('img')
-                                if img:
-                                    src = img.get('src')
-                                    p_text += f" ![]({src})"
-                                material_parts.append(p_text)
-                            elif child.name == 'img':
+                            if isinstance(child, str):
+                                text = child.strip().replace('\xa0', ' ')
+                                if text:
+                                    material_parts.append(text)
+                                continue
+                            if child.name == 'img':
                                 src = child.get('src')
-                                material_parts.append(f"![]({src})")
-                            elif isinstance(child, str) and child.strip():
-                                material_parts.append(child.strip().replace('\xa0', ' '))
+                                if src and src.startswith('//'):
+                                    src = 'https:' + src
+                                if src:
+                                    material_parts.append(f"![]({src})")
+                                continue
+                            text = node_to_markdown(child)
+                            if text:
+                                material_parts.append(text)
                     current_material = "\n".join(material_parts)
                     continue
 
@@ -149,56 +190,27 @@ async def process_question(province, paperId, question, explanation):
                     index = left_div.get_text(strip=True)
                     question_texts = []
                     options_dict = {}
-
+                    # 打印right_div 所有内容
+                    # logger.info(f"Q{index} right_div content: {right_div}")
                     for child in right_div.children:
                         if child.name == 'p':
-                            p_content_list = []
-                            for element in child.contents:
-                                if element.name == 'img':
-                                    src = element.get('src')
-                                    if src:
-                                        p_content_list.append(f"![]({src})")
-                                elif isinstance(element, str):
-                                    text = element.strip()
-                                    if text:
-                                        p_content_list.append(text)
-                                else:
-                                    text = element.get_text(strip=True)
-                                    if text:
-                                        p_content_list.append(text)
-                            
-                            p_text = "".join(p_content_list).replace('\xa0', ' ')
+                            p_text = node_to_markdown(child)
                             if p_text:
                                 question_texts.append(p_text)
                         elif child.name == 'div':
                             classes = child.get('class', [])
                             if any(c.startswith('col-xs-') for c in classes):
-                                opt_content_list = []
-                                for element in child.contents:
-                                    if element.name == 'img':
-                                        src = element.get('src')
-                                        if src:
-                                            opt_content_list.append(f"![]({src})")
-                                    elif isinstance(element, str):
-                                        text = element.strip()
-                                        if text:
-                                            opt_content_list.append(text)
-                                    else:
-                                        text = element.get_text(strip=True)
-                                        if text:
-                                            opt_content_list.append(text)
-                                
-                                opt_text = "".join(opt_content_list).replace('\xa0', ' ')
+                                opt_text = node_to_markdown(child)
                                 match = re.match(r'^([A-D])、(.*)', opt_text, re.DOTALL)
                                 if match:
                                     options_dict[match.group(1)] = match.group(2).strip()
 
-                    question_text = "\n".join(question_texts)
+                    question_text = "\n\n".join(question_texts)
                     question_title = f"{title} 第{index}题"
                     
                     # 打印question_text原始内容
-                    # logger.info(f"Question Text (raw): {question_text}")
-                    
+                    # logger.info(f"Q{index} Text (raw): {question_text}")
+                    logger.info(f"Q{index} md_images={question_text.count('![](')}")
                     # 打印替换之后的内容
                     
                     # logger.info(f"Question Text (replace): {await replace_image_urls(question_text)}")
@@ -225,7 +237,7 @@ async def process_question(province, paperId, question, explanation):
                     questions.append({
                         'comment': paperId,
                         'year': year,
-                        'careerId': '2',
+                        'careerType': '2',
                         'careerName': '事业单位',
                         'province': province,
                         'departmentId': '0',
@@ -252,7 +264,7 @@ async def process_question(province, paperId, question, explanation):
         
         logger.info(f"{explanation}")
         # 从HTML文本创建一个BeautifulSoup对象，使用lxml作为解析器
-        soup = BeautifulSoup(explanation, 'html.parser')
+        soup = BeautifulSoup(explanation, 'lxml')
 
         # 找到试卷名称
         exam_title_tag = soup.find('h3', align='center')
@@ -272,25 +284,23 @@ async def process_question(province, paperId, question, explanation):
                     
                     for child in right.children:
                         if child.name == 'p':
-                            text = child.get_text(strip=True).replace('\xa0', ' ')
-                            imgs = child.find_all('img')
-                            for img in imgs:
-                                src = img.get('src')
-                                text += f" ![]({src})"
-                            
-                            if text:
-                                explanation_texts.append(text)
-                            
-                            match = re.search(r'故正确答案为[：:]?([A-D]+)', text)
+                            md_text = node_to_markdown(child)
+                            if md_text:
+                                explanation_texts.append(md_text)
+
+                            # Extract correct answer from plain text to avoid markdown noise.
+                            plain_text = child.get_text(" ", strip=True).replace('\xa0', ' ')
+                            match = re.search(r'故正确答案为[：:]?([A-D]+)', plain_text)
                             if match:
                                 correct_answer = match.group(1)
                         elif child.name == 'img':
-                             src = child.get('src')
-                             explanation_texts.append(f"![]({src})")
+                             img_md = node_to_markdown(child)
+                             if img_md:
+                                 explanation_texts.append(img_md)
                         elif isinstance(child, str) and child.strip():
                              explanation_texts.append(child.strip().replace('\xa0', ' '))
-                    
-                    full_explanation = "\n".join(explanation_texts)
+
+                    full_explanation = "\n\n".join([t for t in explanation_texts if t]).strip()
                     
                     explanations.append({
                         'explanation': await replace_image_urls(full_explanation),
@@ -458,7 +468,7 @@ async def periodic_scraping_question_task():
                     logger.info(f"Failed to scrape paper ID {paperId} after {max_retries} attempts. Last error: {last_error}")
                 
                 rand = random.randint(1, 10)
-                await asyncio.sleep(30 + rand)  # 每秒钟运行一次任务
+                await asyncio.sleep(10 + rand)  # 每秒钟运行一次任务
                 # break
         # break
 
