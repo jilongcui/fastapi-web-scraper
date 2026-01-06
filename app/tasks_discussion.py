@@ -140,49 +140,47 @@ def getTitleInfo(province, title):
     return None, None
 
 async def replace_image_urls(markdown_text, authToken=""):
-    # 定义正则表达式来匹配 !img[](url)
-    # pattern = r'!\[\]\(([^)]+)\)'
-    # pattern = r"//upload\.gkzenti\.cn/[\w\d]+/[\w\d]+\.(png|jpg)"
-    pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(?:png|jpg)"
-    # pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(png|jpg)"
+    # 定义正则表达式来匹配 //upload.gkzenti.cn/路径/文件名 (后缀可选)
+    pattern = r"//upload\.gkzenti\.cn/\w+/\w+(?:\.[\w]+)?"
+    
     api_endpoint ="https://mian.xiaohe.biz/api/common/uploadByUrl"
     headers = {
         # 'Authorization': f'Bearer {authToken}',
         'Content-Type': 'application/json'
     }
+    
     # 查找所有匹配项
     matches = re.findall(pattern, markdown_text)
-    # matches = [
-    #     markdown_text
-    # ]
-    # logger.info(matches)
-    # logger.info(f"Found {len(matches)} image URLs:")
+    if not matches:
+        return markdown_text
+        
     new_markdown = markdown_text
     
-    for url in matches:
-        # new_markdown += url
-        # 调用 POST 接口获取新 image URL
-        if(url.count('(')>url.count(')')):
-            url = url + ')'
-        imageUrl = "https:"+url
-        # logger.info(f"imageUrl: {imageUrl}")
-        async with aiohttp.ClientSession() as session:
-            async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
-                data = {}
-                if response.status in (200, 201):
-                    # 如果返回状态码是200或201，处理响应内容
-                    data = await response.json()  # 假设服务器返回JSON格式数据
-                    code = data.get("code", {})
-                    # logger.info(f"Request response {data}")
-                    if code == 200:
-                        data = data.get("data", {})
-                        new_url = data.get("location")
-                        # 用新 URL 替换旧 URL
-                        new_markdown = new_markdown.replace(url, new_url)
-                        # logger.info(f"new_markdown: {new_markdown}")
-                        return new_markdown
+    # 使用同一个 session 处理所有图片
+    async with aiohttp.ClientSession() as session:
+        for url in set(matches): # 使用 set 去重，避免重复处理同一张图
+            # 处理可能的括号闭合问题
+            search_url = url
+            if(search_url.count('(')>search_url.count(')')):
+                search_url = search_url + ')'
+                
+            imageUrl = "https:"+search_url
+            try:
+                async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
+                    if response.status in (200, 201):
+                        data = await response.json()
+                        if data.get("code") == 200:
+                            data = data.get("data", {})
+                            new_url = data.get("location")
+                            if new_url:
+                                # 用新 URL 替换旧 URL (全局替换该图片地址)
+                                new_markdown = new_markdown.replace(url, new_url)
+                        else:
+                            logger.info(f"图片上传失败: {imageUrl}, 响应: {data}")
                     else:
-                        logger.info(f"Request failed with status code: {data}")
+                        logger.info(f"请求失败: {imageUrl}, 状态码: {response.status}")
+            except Exception as e:
+                logger.error(f"处理图片 {imageUrl} 时发生异常: {e}")
                 
     return new_markdown
 async def process_discussion(province, paperId, question, explanation):

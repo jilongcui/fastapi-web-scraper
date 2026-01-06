@@ -25,7 +25,7 @@ log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%
 stream_handler.setFormatter(log_formatter)
 logger.addHandler(stream_handler)
 
-file_handler = logging.FileHandler('app.log')
+file_handler = logging.FileHandler('app.log', encoding='utf-8')
 file_handler.setFormatter(log_formatter)
 logger.addHandler(file_handler)
 
@@ -42,7 +42,7 @@ def setup_logger(name):
         stream_handler.setFormatter(log_formatter)
         module_logger.addHandler(stream_handler)
         
-        file_handler = logging.FileHandler('app.log')
+        file_handler = logging.FileHandler('app.log', encoding='utf-8')
         file_handler.setFormatter(log_formatter)
         module_logger.addHandler(file_handler)
     
@@ -167,47 +167,41 @@ def getTitleInfo(title):
     return None, None, None
 
 async def replace_image_urls(markdown_text, authToken=""):
-    # 定义正则表达式来匹配 !img[](url)
-    # pattern = r'!\[\]\(([^)]+)\)'
-    # pattern = r"//upload\.gkzenti\.cn/[\w\d]+/[\w\d]+\.(png|jpg)"
-    pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(?:png|jpg)"
-    # pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(png|jpg)"
+    # 定义正则表达式来匹配 //upload.gkzenti.cn/路径/文件名 (后缀可选)
+    # pattern = r"//upload\.gkzenti\.cn/\w+/\w+(?:\.[\w]+)?"
+    pattern = r"//upload\.gkzenti\.cn/[a-zA-Z0-9_./-]+"
+    
+    # 移除 \xa0 等可能导致 logging 报错的字符
+    if markdown_text:
+        markdown_text = markdown_text.replace('\xa0', ' ')
+    
     api_endpoint ="https://mian.xiaohe.biz/api/common/uploadByUrl"
     headers = {
         # 'Authorization': f'Bearer {authToken}',
         'Content-Type': 'application/json'
     }
+    
     # 查找所有匹配项
     matches = re.findall(pattern, markdown_text)
-    # matches = [
-    #     markdown_text
-    # ]
-    # logger.info(matches)
-    # logger.info(f"Found {len(matches)} image URLs:")
+    if not matches:
+        return markdown_text
+        
     new_markdown = markdown_text
     
     for url in matches:
-        # new_markdown += url
-        # 调用 POST 接口获取新 image URL
         if(url.count('(')>url.count(')')):
             url = url + ')'
         imageUrl = "https:"+url
-        # logger.info(f"imageUrl: {imageUrl}")
         async with aiohttp.ClientSession() as session:
             async with session.post(api_endpoint, json={"imageUrl": imageUrl}, headers=headers) as response:
                 data = {}
                 if response.status in (200, 201):
-                    # 如果返回状态码是200或201，处理响应内容
-                    data = await response.json()  # 假设服务器返回JSON格式数据
+                    data = await response.json()
                     code = data.get("code", {})
-                    # logger.info(f"Request response {data}")
                     if code == 200:
                         data = data.get("data", {})
                         new_url = data.get("location")
-                        # 用新 URL 替换旧 URL
                         new_markdown = new_markdown.replace(url, new_url)
-                        # logger.info(f"new_markdown: {new_markdown}")
-                        return new_markdown
                     else:
                         logger.info(f"Request failed with status code: {data}")
                 

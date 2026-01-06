@@ -134,16 +134,15 @@ def getTitleInfo(title):
     return None, None
 
 async def replace_image_urls(markdown_text, authToken=""):
-    # 定义正则表达式来匹配 !img[](url)
-    # pattern = r'!\[\]\(([^)]+)\)'
-    # pattern = r"//upload\.gkzenti\.cn/[\w\d]+/[\w\d]+\.(png|jpg)"
-    pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(?:png|jpg)"
-    # pattern = r"//upload\.gkzenti\.cn/\w+/\w+\.(png|jpg)"
+    # 定义正则表达式来匹配 //upload.gkzenti.cn/路径/文件名 (后缀可选)
+    pattern = r"//upload\.gkzenti\.cn/\w+/\w+(?:\.[\w]+)?"
+    
     api_endpoint ="https://mian.xiaohe.biz/api/common/uploadByUrl"
     headers = {
         # 'Authorization': f'Bearer {authToken}',
         'Content-Type': 'application/json'
     }
+    
     # 查找所有匹配项
     matches = re.findall(pattern, markdown_text)
     # matches = [

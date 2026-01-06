@@ -91,8 +91,10 @@ async def process_question(province, paperId, question, explanation):
         # 获取试卷名称
         title_tag = soup.find('h3', align='center')
         title = title_tag.string if title_tag else "无标题"
+        title = title.replace('\xa0', ' ')
         logger.info(f"试卷名称: {title}")
         year, department, title = getTitleInfo(title)
+        title = title.replace('\xa0', ' ')
         logger.info(f"试卷名称: {title}")
         questions = []
 
@@ -106,7 +108,7 @@ async def process_question(province, paperId, question, explanation):
                 # 1. 获取子标题subtitle，并提取类别名称typeName
                 subtitle_div = row.find('div', class_='subtitle')
                 if subtitle_div:
-                    subtitle_text = subtitle_div.get_text(strip=True)
+                    subtitle_text = subtitle_div.get_text(strip=True).replace('\xa0', ' ')
                     match = re.search(r'[一二三四五六七八九十]+、(.*?)(?:。|$)', subtitle_text)
                     if match:
                         current_typeName = match.group(1)
@@ -126,7 +128,7 @@ async def process_question(province, paperId, question, explanation):
                             continue
                         for child in col.children:
                             if child.name == 'p':
-                                p_text = child.get_text(strip=True)
+                                p_text = child.get_text(strip=True).replace('\xa0', ' ')
                                 img = child.find('img')
                                 if img:
                                     src = img.get('src')
@@ -136,7 +138,7 @@ async def process_question(province, paperId, question, explanation):
                                 src = child.get('src')
                                 material_parts.append(f"![]({src})")
                             elif isinstance(child, str) and child.strip():
-                                material_parts.append(child.strip())
+                                material_parts.append(child.strip().replace('\xa0', ' '))
                     current_material = "\n".join(material_parts)
                     continue
 
@@ -150,27 +152,56 @@ async def process_question(province, paperId, question, explanation):
 
                     for child in right_div.children:
                         if child.name == 'p':
-                            p_text = child.get_text(strip=True)
-                            imgs = child.find_all('img')
-                            for img in imgs:
-                                src = img.get('src')
-                                p_text += f" ![]({src})"
+                            p_content_list = []
+                            for element in child.contents:
+                                if element.name == 'img':
+                                    src = element.get('src')
+                                    if src:
+                                        p_content_list.append(f"![]({src})")
+                                elif isinstance(element, str):
+                                    text = element.strip()
+                                    if text:
+                                        p_content_list.append(text)
+                                else:
+                                    text = element.get_text(strip=True)
+                                    if text:
+                                        p_content_list.append(text)
+                            
+                            p_text = "".join(p_content_list).replace('\xa0', ' ')
                             if p_text:
                                 question_texts.append(p_text)
                         elif child.name == 'div':
                             classes = child.get('class', [])
                             if any(c.startswith('col-xs-') for c in classes):
-                                opt_text = child.get_text(strip=True)
-                                imgs = child.find_all('img')
-                                for img in imgs:
-                                    src = img.get('src')
-                                    opt_text += f" ![]({src})"
+                                opt_content_list = []
+                                for element in child.contents:
+                                    if element.name == 'img':
+                                        src = element.get('src')
+                                        if src:
+                                            opt_content_list.append(f"![]({src})")
+                                    elif isinstance(element, str):
+                                        text = element.strip()
+                                        if text:
+                                            opt_content_list.append(text)
+                                    else:
+                                        text = element.get_text(strip=True)
+                                        if text:
+                                            opt_content_list.append(text)
+                                
+                                opt_text = "".join(opt_content_list).replace('\xa0', ' ')
                                 match = re.match(r'^([A-D])、(.*)', opt_text, re.DOTALL)
                                 if match:
                                     options_dict[match.group(1)] = match.group(2).strip()
 
                     question_text = "\n".join(question_texts)
                     question_title = f"{title} 第{index}题"
+                    
+                    # 打印question_text原始内容
+                    logger.info(f"Question Text (raw): {question_text}")
+                    
+                    # 打印替换之后的内容
+                    
+                    logger.info(f"Question Text (replace): {await replace_image_urls(question_text)}")
                     
                     # 根据CONTENT_TYPE定义的内容，把TypeName映射为对应的数字类型
                     type_number = "0"  # 默认类型编号
@@ -186,6 +217,11 @@ async def process_question(province, paperId, question, explanation):
                                 type_number = key
                                 break
                     
+                    # {A: '选项A内容', B: '选项B内容', ...} 转化为列表 ['','','','']的形式
+                    # 并对每个选项内容执行 replace_image_urls转化
+                    options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B', 'C', 'D']]
+                    
+                    # 打印
                     questions.append({
                         'comment': paperId,
                         'year': year,
@@ -201,7 +237,7 @@ async def process_question(province, paperId, question, explanation):
                         'text': await replace_image_urls(question_text),
                         'typeId': type_number,
                         'typeName': current_typeName,
-                        'options': options_dict
+                        'options': options_list
                     })
         
     except Exception as e:
@@ -236,7 +272,7 @@ async def process_question(province, paperId, question, explanation):
                     
                     for child in right.children:
                         if child.name == 'p':
-                            text = child.get_text(strip=True)
+                            text = child.get_text(strip=True).replace('\xa0', ' ')
                             imgs = child.find_all('img')
                             for img in imgs:
                                 src = img.get('src')
@@ -252,7 +288,7 @@ async def process_question(province, paperId, question, explanation):
                              src = child.get('src')
                              explanation_texts.append(f"![]({src})")
                         elif isinstance(child, str) and child.strip():
-                             explanation_texts.append(child.strip())
+                             explanation_texts.append(child.strip().replace('\xa0', ' '))
                     
                     full_explanation = "\n".join(explanation_texts)
                     
@@ -400,6 +436,7 @@ async def periodic_scraping_question_task():
                 # paperId = '1668003216766'
                 # paperId = '1702961776894'
                 # paperId = '1667998867772'
+                paperId = '1746428264151'
                 max_retries = 3
                 success = False
                 last_error = None
