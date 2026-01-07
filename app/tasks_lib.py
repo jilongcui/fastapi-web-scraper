@@ -142,16 +142,19 @@ async def getUrls(paperId:str) -> dict:
 
 import re
 def getTitleInfo(title):
-    # 定义正则表达式模式，忽略月份
-    # 2020年7月11日浙江湖州南浔区医疗卫生单位公开招聘事业编制人员面试题
-    # 2016年6月17日浙江省金华市面试真题
-    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)(?:面试真题|面试题?|真题)?\s*$'
+    # 支持：
+    # - 2020年7月11日浙江湖州南浔区医疗卫生单位公开招聘事业编制人员面试题
+    # - 2016年6月17日浙江省金华市面试真题
+    # - 2015年8月河北省廊坊市直事业单位考试《职业能力测验》真题（精选）  (无“日”)
+    # - 2016年6月河北省石家庄市事业单位考试《职业能力测验》真题            (无“日”)
+    # - 仅有“YYYY年 + 部门/单位 ...”
+    pattern = r'(?P<year>\d{4})年(?:(?P<month>\d{1,2})月)?(?:(?P<day>\d{1,2})日)?(?P<department>.*?)(?:面试真题|面试题?|面试|真题)?\s*$'
 
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
     title = title.replace("（网友回忆版）", "")
     # 自动去除所有（xxx）格式的内容
-    # title = re.sub(r'（[^）]*）', '', title)
+    title = re.sub(r'（[^）]*）', '', title)
     match = re.search(pattern, title)
     if match:
         year = match.group('year')

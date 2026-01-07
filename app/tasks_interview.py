@@ -116,12 +116,13 @@ async def getUrls(paperId:str) -> dict:
 
 import re
 def getTitleInfo(title):
-    # 定义正则表达式模式，忽略月份
-    pattern = r'(?P<year>\d{4})年(?:\d{1,2})月\d{1,2}日(?P<department>.*?)面试'
+    # 支持“YYYY年MM月DD日...”与“YYYY年MM月...”等缺少“日”的标题
+    pattern = r'(?P<year>\d{4})年(?:(?P<month>\d{1,2})月)?(?:(?P<day>\d{1,2})日)?(?P<department>.*?)(?:面试真题|面试题?|面试|真题)?\s*$'
 
     # 解析每个主题
     title = title.strip().replace("上午", "").replace("下午", "")
     title = title.replace("（网友回忆版）", "")
+    title = re.sub(r'（[^）]*）', '', title)
     match = re.search(pattern, title)
     if match:
         year = match.group('year')
