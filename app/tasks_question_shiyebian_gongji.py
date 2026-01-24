@@ -240,7 +240,7 @@ async def process_question(province, paperId, question, explanation):
                     if type_number == "3":
                         options_list = ['正确', '错误', '', '']
                     else:
-                        options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B', 'C', 'D']]
+                        options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B']]
                     
                     # 打印
                     questions.append({
