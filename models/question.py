@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class Question(BaseModel):
-    careerId: str | None = None
+    careerType: str | None = None
     careerName: str | None = None
     typeId: str | None = None
     typeName: str | None = None
