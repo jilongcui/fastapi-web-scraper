@@ -3,6 +3,7 @@ from pydantic import BaseModel
 class Question(BaseModel):
     careerType: str | None = None
     careerName: str | None = None
+    questionType: str | None = None
     typeId: str | None = None
     typeName: str | None = None
     title: str

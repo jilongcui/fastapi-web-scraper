@@ -248,6 +248,7 @@ async def process_question(province, paperId, question, explanation):
                         'year': year,
                         'careerType': '2',
                         'careerName': '事业单位',
+                        'questionType': '1', # 1: 公共基础知识 2：职业测试 3：综合应用 4: 面试
                         'province': province,
                         'departmentId': '0',
                         'department': department,
