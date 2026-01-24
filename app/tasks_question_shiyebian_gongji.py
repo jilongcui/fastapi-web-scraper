@@ -24,59 +24,51 @@ save_directory = 'papers'
 # 本题目类型包括：1：常识判断；2：数量关系；3：言语理解与表达；4：判断推理；5：资料分析；6：政治理论；
 
 CONTENT_TYPE = { 
-      '1': '常识判断',
-      '2': '言语',
-      '3': '数量',
-      '4': '判断推理',
-      '5': '资料分析',
-      '6': '政治理论',
-      '7': '策略选择'
+      '1': '单项选择题',
+      '2': '多项选择题',
+      '3': '判断题',
 }
 
 CONTENT_TYPE2 = { 
-      '1': '常识',
-      '2': '表达',
-      '3': '数量',
-      '4': '推理',
-      '5': '资料',
-      '6': '政治',
-      '7': '策略'
+      '1': '单项',
+      '2': '多项',
+      '3': '判断',
 }
 
 def get_pageurls():
     urls = [
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=国家",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=联考",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=浙江",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=山东",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=江苏",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=广东",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=四川",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=福建",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=广西",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=安徽",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=上海",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=北京",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=辽宁",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=天津",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=河北",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=海南",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=河南",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=江西",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=湖南",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=湖北",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=山西",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=内蒙古",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=吉林",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=黑龙江",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=贵州",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=重庆",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=陕西",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=甘肃",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=新疆",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=青海",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=深圳",
-        "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=其他",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=国家",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=联考",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=浙江",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=山东",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=江苏",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=广东",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=四川",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=福建",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=广西",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=安徽",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=上海",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=北京",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=辽宁",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=天津",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=河北",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=海南",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=河南",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=江西",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=湖南",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=湖北",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=山西",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=内蒙古",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=吉林",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=黑龙江",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=贵州",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=重庆",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=陕西",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=甘肃",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=新疆",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=青海",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=深圳",
+        "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=其他",
     ]
 
     return urls
@@ -244,7 +236,11 @@ async def process_question(province, paperId, question, explanation):
                     
                     # {A: '选项A内容', B: '选项B内容', ...} 转化为列表 ['','','','']的形式
                     # 并对每个选项内容执行 replace_image_urls转化
-                    options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B', 'C', 'D']]
+                    # 判断题特殊处理：如果是判断题类型，使用默认选项 A: 正确，B: 错误
+                    if type_number == "3":
+                        options_list = ['正确', '错误', '', '']
+                    else:
+                        options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B', 'C', 'D']]
                     
                     # 打印
                     questions.append({
@@ -306,6 +302,12 @@ async def process_question(province, paperId, question, explanation):
                             match = re.search(r'故正确答案为[：:]?([A-D]+)', plain_text)
                             if match:
                                 correct_answer = match.group(1)
+                            # 判断题特殊处理：识别"故表述正确"或"故表述错误"
+                            if not correct_answer:
+                                if re.search(r'故.*表述.*正确|故.*正确', plain_text):
+                                    correct_answer = 'A'
+                                elif re.search(r'故.*表述.*错误|故.*错误', plain_text):
+                                    correct_answer = 'B'
                         elif child.name == 'img':
                              img_md = node_to_markdown(child)
                              if img_md:
@@ -444,8 +446,8 @@ async def periodic_scraping_question_task():
         logger.info(url)
     
         # 提取URL中的省份信息
-        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=贵州" → "贵州"
-        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位-职测&province=浙江&index=2" → "浙江"
+        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=贵州" → "贵州"
+        # 例如: "https://www.gkzenti.cn/paper?cls=事业单位-公基&province=浙江&index=2" → "浙江"
         province = url.split("province=")[-1].split("&")[0] if "province=" in url else "未知省份"
         # URL解码省份名称
         province = unquote(province)
