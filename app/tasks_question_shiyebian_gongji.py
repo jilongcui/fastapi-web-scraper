@@ -238,9 +238,9 @@ async def process_question(province, paperId, question, explanation):
                     # 并对每个选项内容执行 replace_image_urls转化
                     # 判断题特殊处理：如果是判断题类型，使用默认选项 A: 正确，B: 错误
                     if type_number == "3":
-                        options_list = ['正确', '错误', '', '']
+                        options_list = ['正确', '错误']
                     else:
-                        options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B']]
+                        options_list = [await replace_image_urls(options_dict.get(opt, "")) for opt in ['A', 'B', 'C', 'D']]
                     
                     # 打印
                     questions.append({
