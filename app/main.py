@@ -9,7 +9,8 @@ from app.tasks_interview_shiyebian import periodic_scraping_interview_task, proc
 # from app.tasks_discussion import periodic_scraping_task  # 导入申论爬虫任务
 # from app.tasks import periodic_scraping_task  # 导入国考爬虫任务
 # from app.tasks_discussion import process_discussion_types # 导入申论类型检查
-from app.tasks_question_shiyebian import periodic_scraping_question_task # 导入申论类型检查
+from app.tasks_question_shiyebian import periodic_scraping_question_task # 导入申论类型检查#
+from app.tasks_question_shiyebian_gongji import periodic_scraping_question_task # 导入申论类型检查
 from app.logs import get_logger
 from app.database import close_database_connection
 
