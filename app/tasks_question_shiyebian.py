@@ -22,6 +22,11 @@ logger = setup_logger(__name__)
 # 获取保存目录
 save_directory = 'papers'
 
+# 职测题目常量配置
+CAREER_TYPE = '2'
+CAREER_NAME = '事业单位'
+QUESTION_TYPE = '2'  # 1: 公共知识 2：职业测试 3：综合应用 4: 面试
+
 # 从 explanation 解析 correctAnswer 的增强函数
 def parse_correct_answer_from_explanation(explanation):
     """
@@ -354,9 +359,9 @@ async def process_question(province, paperId, question, explanation):
                     questions.append({
                         'comment': paperId,
                         'year': year,
-                        'careerType': '2',
-                        'careerName': '事业单位',
-                        'questionType': '2', # 1: 公共知识 2：职业测试 3：综合应用 4: 面试
+                        'careerType': CAREER_TYPE,
+                        'careerName': CAREER_NAME,
+                        'questionType': QUESTION_TYPE,
                         'province': province,
                         'departmentId': '0',
                         'department': department,
