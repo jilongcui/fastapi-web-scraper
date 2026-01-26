@@ -21,6 +21,109 @@ logger = setup_logger(__name__)
 # 获取保存目录
 save_directory = 'papers'
 
+# 从 explanation 解析 correctAnswer 的增强函数
+def parse_correct_answer_from_explanation(explanation):
+    """
+    从 explanation 文本中使用多个规则解析出 correctAnswer
+    返回: 答案字符串(如 'A', 'B', 'AB' 等) 或 None
+    """
+    if not explanation or not isinstance(explanation, str):
+        return None
+    
+    # 规则1: "故正确选项为A/B/C/D"
+    match = re.search(r'故正确选项为([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则2: "故正确选项选A/B/C/D"
+    match = re.search(r'故正确选项选([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则3: "故本题选A/B/C/D"
+    match = re.search(r'故本题选([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则4: "故本题答案选A/B/C/D"
+    match = re.search(r'故本题答案选([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则5: "答案选A/B/C/D"
+    match = re.search(r'答案选([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则6: "故本题答案为A/B/C/D"
+    match = re.search(r'故本题答案为[：:]?([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则7: "故正确答案为A/B/C/D" (已存在的规则，保持兼容)
+    match = re.search(r'故正确答案为[：:]?([A-D]+)', explanation)
+    if match:
+        return match.group(1)
+    
+    # 规则8: "表述正确" -> A
+    if '表述正确' in explanation:
+        return 'A'
+    
+    # 规则9: "表述错误" -> B
+    if '表述错误' in explanation:
+        return 'B'
+    
+    # 规则10: "本题正确" -> A
+    if '本题正确' in explanation:
+        return 'A'
+    
+    # 规则11: "本题错误" -> B
+    if '本题错误' in explanation:
+        return 'B'
+    
+    return None
+
+# 从网页抓取答案
+async def fetch_answers_from_web(paperId):
+    """
+    从 https://www.gkzenti.cn/answer/{paperId} 抓取答案
+    返回: {题号: 答案} 的字典，如 {1: 'C', 2: 'AB', ...} 或 None
+    """
+    try:
+        url = f'https://www.gkzenti.cn/answer/{paperId}'
+        logger.info(f"正在从网页抓取答案: {url}")
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                url,
+                timeout=aiohttp.ClientTimeout(total=10),
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            ) as response:
+                if response.status != 200:
+                    logger.error(f"抓取失败: HTTP {response.status}")
+                    return None
+                
+                html = await response.text()
+                soup = BeautifulSoup(html, 'lxml')
+                
+                answers = {}
+                # 解析答案列表
+                for element in soup.select('#printcontent .col-xs-1-5'):
+                    text = element.get_text(strip=True)
+                    # 匹配格式 "1、C" 或 "1、ABC"
+                    match = re.match(r'^(\d+)、([A-D]+)$', text)
+                    if match:
+                        question_number = int(match.group(1))
+                        answer = match.group(2)
+                        answers[question_number] = answer
+                
+                logger.info(f"成功解析 {len(answers)} 个答案")
+                return answers if answers else None
+    
+    except Exception as error:
+        logger.error(f"抓取答案失败: {error}")
+        return None
+
 # 本题目类型包括：1：常识判断；2：数量关系；3：言语理解与表达；4：判断推理；5：资料分析；6：政治理论；
 
 CONTENT_TYPE = { 
@@ -300,15 +403,8 @@ async def process_question(province, paperId, question, explanation):
 
                             # Extract correct answer from plain text to avoid markdown noise.
                             plain_text = child.get_text(" ", strip=True).replace('\xa0', ' ')
-                            match = re.search(r'故正确答案为[：:]?([A-D]+)', plain_text)
-                            if match:
-                                correct_answer = match.group(1)
-                            # 判断题特殊处理：识别"故表述正确"或"故表述错误"
                             if not correct_answer:
-                                if re.search(r'故.*表述.*正确|故.*正确', plain_text):
-                                    correct_answer = 'A'
-                                elif re.search(r'故.*表述.*错误|故.*错误', plain_text):
-                                    correct_answer = 'B'
+                                correct_answer = parse_correct_answer_from_explanation(plain_text) or ""
                         elif child.name == 'img':
                              img_md = node_to_markdown(child)
                              if img_md:
@@ -410,6 +506,26 @@ async def process_question(province, paperId, question, explanation):
     for i in range(count):
         merged_entry = {**questions[i], **explanations[i]}
         interviews.append(merged_entry)
+    
+    # 检查是否有空的 correctAnswer，如果有则从网页抓取
+    empty_answer_count = sum(1 for item in interviews if not item.get('correctAnswer'))
+    if empty_answer_count > 0:
+        logger.info(f"发现 {empty_answer_count} 个题目答案为空，尝试从网页抓取答案...")
+        web_answers = await fetch_answers_from_web(paperId)
+        
+        if web_answers:
+            filled_count = 0
+            for item in interviews:
+                if not item.get('correctAnswer') and item.get('index'):
+                    question_number = item['index']
+                    if question_number in web_answers:
+                        item['correctAnswer'] = web_answers[question_number]
+                        item['allowMultipleSelections'] = len(web_answers[question_number]) > 1
+                        filled_count += 1
+            logger.info(f"从网页成功填充了 {filled_count} 个答案")
+        else:
+            logger.warning(f"无法从网页获取答案，paperId: {paperId}")
+    
     logger.info(interviews)
     return interviews
 
