@@ -5,6 +5,7 @@ import aiohttp
 import asyncio
 import random
 import os
+from datetime import datetime
 from bs4 import BeautifulSoup, NavigableString
 from urllib.parse import unquote
 from app.logs import get_logger
@@ -546,6 +547,10 @@ async def scrape_process(listUrl, paperId, province):
         raise Exception("Failed to process questions")
     for question in questions:
         logger.info(question["title"])
+        # 添加创建时间和更新时间
+        now = datetime.now()
+        question['createTime'] = now
+        question['updateTime'] = now
         new_question = await question_collection.insert_one(question)
         created_question = await question_collection.find_one({"_id": new_question.inserted_id})
         # logger.info(f"Created question: {created_question}")
